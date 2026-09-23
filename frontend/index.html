@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI StoryLingo</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        #result {
+            margin-top: 30px;
+        }
+
+        .vocabulary {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>AI StoryLingo</h1>
+
+    <p>
+        Create a personalized language-learning story.
+    </p>
+
+    <label>Language</label>
+
+    <select id="language">
+        <option value="English">English</option>
+        <option value="Japanese">Japanese</option>
+        <option value="Korean">Korean</option>
+    </select>
+
+    <label>Level</label>
+
+    <select id="level">
+        <option value="A1">A1</option>
+        <option value="A2">A2</option>
+        <option value="B1" selected>B1</option>
+        <option value="B2">B2</option>
+    </select>
+
+    <label>Genre</label>
+
+    <select id="genre">
+        <option value="Mystery">Mystery</option>
+        <option value="Fantasy">Fantasy</option>
+        <option value="Sci-Fi">Sci-Fi</option>
+        <option value="Adventure">Adventure</option>
+    </select>
+
+    <label>Topic</label>
+
+    <input id="topic" type="text" value="Space" placeholder="Example: Space">
+
+    <label>Target vocabulary</label>
+
+    <input id="targetWords" type="number" value="5" min="1" max="10">
+
+    <button onclick="generateStory()">
+        Generate My Story
+    </button>
+
+    <div id="result"></div>
+
+    <script>
+
+        async function generateStory() {
+
+            const result = document.getElementById("result");
+
+            result.innerHTML = "<p>Creating your story...</p>";
+
+            const data = {
+                language: document.getElementById("language").value,
+                level: document.getElementById("level").value,
+                genre: document.getElementById("genre").value,
+                topic: document.getElementById("topic").value,
+                target_words: Number(
+                    document.getElementById("targetWords").value
+                )
+            };
+
+            try {
+
+                const response = await fetch(
+                    "http://localhost:8000/generate-story",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify(data)
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error("Failed to generate story");
+                }
+
+                const story = await response.json();
+
+                let vocabularyHTML = "";
+
+                story.vocabulary.forEach(item => {
+
+                    vocabularyHTML += `
+                        <li>
+                            <strong>${item.word}</strong>
+                            -
+                            ${item.meaning}
+                            <br>
+                            Example: ${item.example}
+                        </li>
+                    `;
+
+                });
+
+                result.innerHTML = `
+                    <h2>${story.title}</h2>
+
+                    <p>
+                        <strong>Level:</strong>
+                        ${story.level}
+                    </p>
+
+                    <p>
+                        ${story.story}
+                    </p>
+
+                    <div class="vocabulary">
+
+                        <h3>Vocabulary</h3>
+
+                        <ul>
+                            ${vocabularyHTML}
+                        </ul>
+
+                    </div>
+                `;
+
+            } catch (error) {
+
+                result.innerHTML = `
+                    <p>
+                        Error: ${error.message}
+                    </p>
+                `;
+
+                console.error(error);
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
