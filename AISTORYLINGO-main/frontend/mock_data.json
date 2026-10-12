@@ -1,0 +1,50 @@
+{
+  "title": "The Celestial Library",
+  "level": "B1",
+  "language": "English",
+  "genre": "Fantasy",
+  "topic": "Space",
+  "content": "High above the clouds, where the stars hummed ancient melodies, there existed a library made entirely of light. The Celestial Library, as the wanderers called it, held every story ever dreamed but never written. One evening, a curious astronomer named Liora discovered a shimmering portal in her observatory. She hesitated, her heart pounding with both fear and wonder. 'What if I never return?' she whispered to the silent telescope. But curiosity was stronger than caution. She stepped through the portal and found herself floating among constellations that formed sentences in languages she had never heard. A guardian made of stardust approached her. 'Welcome, seeker,' the guardian said, its voice echoing like a distant nebula. 'You may read one story, but you must leave one of your own behind.' Liora thought carefully. She spoke aloud a tale of her childhood — of watching meteor showers with her grandmother, of naming stars after lost pets, of believing the moon was a lantern held by a gentle giant. The stardust guardian smiled and handed her a book bound in aurora light. Inside, she found a story written in a language she could suddenly understand — a language that tasted like honey and sounded like rain on a quiet roof. When Liora returned home, the portal had vanished. But on her desk lay a single page from the celestial book, glowing faintly. She read it every night before sleep, and each time, the words rearranged themselves into a new lesson, teaching her something she had never known before.",
+  "vocabulary": [
+    {
+      "word": "celestial",
+      "pronunciation": "/sɪˈles.tʃəl/",
+      "part_of_speech": "adjective",
+      "meaning": "Relating to the sky or outer space; heavenly.",
+      "meaning_vi": "Thuộc về bầu trời hoặc vũ trụ; thuộc thiên đường.",
+      "example": "The celestial library floated among the stars."
+    },
+    {
+      "word": "shimmer",
+      "pronunciation": "/ˈʃɪm.ər/",
+      "part_of_speech": "verb",
+      "meaning": "To shine with a soft, slightly wavering light.",
+      "meaning_vi": "Tỏa sáng với ánh sáng dịu nhẹ, lung linh.",
+      "example": "The portal shimmered like liquid starlight."
+    },
+    {
+      "word": "constellation",
+      "pronunciation": "/ˌkɒn.stəˈleɪ.ʃən/",
+      "part_of_speech": "noun",
+      "meaning": "A group of stars forming a recognizable pattern.",
+      "meaning_vi": "Một nhóm sao tạo thành hình dạng có thể nhận biết; chòm sao.",
+      "example": "The constellations formed sentences in unknown languages."
+    },
+    {
+      "word": "nebula",
+      "pronunciation": "/ˈneb.jʊ.lə/",
+      "part_of_speech": "noun",
+      "meaning": "A cloud of gas and dust in outer space, often where stars are born.",
+      "meaning_vi": "Đám mây khí và bụi trong vũ trụ, thường là nơi các ngôi sao được sinh ra; tinh vân.",
+      "example": "The guardian's voice echoed like a distant nebula."
+    },
+    {
+      "word": "aurora",
+      "pronunciation": "/ɔːˈrɔː.rə/",
+      "part_of_speech": "noun",
+      "meaning": "A natural display of colored light in the sky, especially near the poles.",
+      "meaning_vi": "Hiện tượng ánh sáng màu tự nhiên trên bầu trời, đặc biệt ở gần các cực; cực quang.",
+      "example": "The book was bound in aurora light."
+    }
+  ]
+}
