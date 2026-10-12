@@ -1,29 +1,18 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from app.database import create_db_and_tables
 
-from app.services.story_service import StoryService
+# Chú ý: import models vào để SQLModel nhận diện được các bảng trước khi tạo
+from app import models 
 
 app = FastAPI(title="AI StoryLingo API", version="0.1.0")
 
-class StoryRequest(BaseModel):
-    language: str
-    level: str
-    genre: str
-    topic: str
-    target_words: int = 5
+# Sự kiện này chạy ngay khi server vừa bật lên
+@app.on_event("startup")
+def on_startup():
+    print("Đang kết nối Database và tạo bảng...")
+    create_db_and_tables()
+    print("Tạo bảng thành công! Các bảng đã có trong Supabase.")
 
 @app.get("/")
 def root():
     return {"message": "AI StoryLingo API is running"}
-
-@app.post("/generate-story")
-def generate_story(request: StoryRequest):
-    service = StoryService()
-    story = service.generate_story(
-        language=request.language,
-        level=request.level,
-        genre=request.genre,
-        topic=request.topic,
-        target_words=request.target_words
-    )
-    return story.model_dump()

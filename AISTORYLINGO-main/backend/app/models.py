@@ -1,10 +1,11 @@
-from typing import Optional, List
-from sqlmodel import Field, SQLModel, Relationship  # type: ignore[import-not-found]
+from typing import Optional
+from sqlmodel import Field, SQLModel  # type: ignore[import-not-found]
 from datetime import datetime, timezone
 
+# --- BẢNG USERS ---
 class User(SQLModel, table=True):
     __tablename__ = "users"
-    id: str = Field(primary_key=True) # Dùng Firebase UID
+    id: str = Field(primary_key=True) # ID lấy từ Firebase
     name: str
     email: str = Field(unique=True, index=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -19,6 +20,7 @@ class UserPreference(SQLModel, table=True):
     learning_goals: str
     target_vocabulary: int
 
+# --- BẢNG STORY ---
 class Story(SQLModel, table=True):
     __tablename__ = "stories"
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -28,7 +30,7 @@ class Story(SQLModel, table=True):
     genre: str
     language: str
     level: str
-    status: str = Field(default="in_progress") # in_progress, completed
+    status: str = Field(default="in_progress")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class Chapter(SQLModel, table=True):
@@ -46,6 +48,7 @@ class Choice(SQLModel, table=True):
     choice_text: str
     next_chapter_id: Optional[int] = Field(default=None, foreign_key="chapters.id")
 
+# --- BẢNG TỪ VỰNG ---
 class Vocabulary(SQLModel, table=True):
     __tablename__ = "vocabulary"
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -60,18 +63,17 @@ class UserVocabulary(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: str = Field(foreign_key="users.id")
     vocabulary_id: int = Field(foreign_key="vocabulary.id")
-    mastery_level: int = Field(default=0) # 0 đến 100%
+    mastery_level: int = Field(default=0)
     times_reviewed: int = Field(default=0)
     correct_answers: int = Field(default=0)
-    last_reviewed: Optional[datetime] = None
 
-
+# --- BẢNG QUIZ ---
 class Quiz(SQLModel, table=True):
     __tablename__ = "quiz"
     id: Optional[int] = Field(default=None, primary_key=True)
     chapter_id: int = Field(foreign_key="chapters.id")
     question: str
-    options: str 
+    options: str # Chuỗi JSON chứa 4 đáp án A B C D
     correct_answer: str
 
 class QuizResult(SQLModel, table=True):
