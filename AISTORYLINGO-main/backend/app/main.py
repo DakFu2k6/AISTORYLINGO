@@ -4,7 +4,8 @@ from app import models
 
 from app.routes import auth
 from app.routes import stories
-from app.routes import vocabulary 
+from app.routes import vocabulary
+from app.routes import quiz 
 
 app = FastAPI(title="AI StoryLingo API", version="0.1.0")
 
@@ -14,8 +15,8 @@ def on_startup():
 
 app.include_router(auth.router)
 app.include_router(stories.router)
-# 2. Gắn router từ vựng vào ứng dụng
-app.include_router(vocabulary.router) 
+app.include_router(vocabulary.router)
+app.include_router(quiz.router) 
 
 @app.get("/")
 def root():
