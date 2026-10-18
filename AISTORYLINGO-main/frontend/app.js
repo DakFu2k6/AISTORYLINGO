@@ -16,10 +16,12 @@
  * When integrating with a FastAPI / Python backend, simply update:
  *   const API_BASE_URL = 'http://localhost:8000/api';
  */
-const API_BASE_URL = '.';
+const API_BASE_URL = 'http://localhost:8000';
 
 const ENDPOINTS = {
-  generateStory: `${API_BASE_URL}/mock_data.json`,
+  generateStory: `${API_BASE_URL}/stories/generate`, // Đã nối vào API gọi Gemini
+  login: `${API_BASE_URL}/auth/login`,               // Nối thêm API đăng nhập
+  register: `${API_BASE_URL}/auth/register`          // Nối thêm API đăng ký (nếu có)
 };
 
 /**
@@ -489,19 +491,32 @@ function initNativeFairyDustFallback() {
  */
 async function fetchGeneratedStory(payload) {
   try {
-    const response = await fetch(ENDPOINTS.generateStory);
+    // Gọi thẳng lên server FastAPI (cổng 8000) bằng phương thức POST
+    const response = await fetch(ENDPOINTS.generateStory, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      // Chuyển cục payload từ form thành chuỗi JSON để gửi đi
+      body: JSON.stringify({
+        user_id: AppState.currentUser?.uid || "11247140", // Ghép ID người dùng thật hoặc test
+        language: payload.language,
+        level: payload.level,
+        genre: payload.genre,
+        topic: payload.topic,
+        target_words: payload.target_words
+      })
+    });
 
     if (!response.ok) {
-      throw new Error(`Server responded with HTTP ${response.status}: ${response.statusText}`);
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Server error: HTTP ${response.status}`);
     }
 
     const storyData = await response.json();
     return storyData;
 
   } catch (error) {
-    if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      throw new Error('Network error — unable to reach story generator endpoint. Check CORS and server status.');
-    }
     throw error;
   }
 }
