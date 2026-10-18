@@ -27,3 +27,20 @@ class StoryService:
         raw_text = response.text
         data = json.loads(raw_text)
         return StoryResponse(**data)
+
+    def generate_next_chapter(self, previous_content: str, user_choice: str) -> str:
+        prompt = f"""
+        Bạn là người kể chuyện tương tác. 
+        Dưới đây là nội dung chương trước:
+        {previous_content}
+        
+        Người dùng đã chọn hành động tiếp theo là: "{user_choice}"
+        
+        Hãy viết tiếp chương mới (khoảng 150-200 từ) dựa trên lựa chọn này. 
+        Chỉ trả về nội dung câu chuyện, không thêm văn bản thừa.
+        """
+        response = self.client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        return response.text
