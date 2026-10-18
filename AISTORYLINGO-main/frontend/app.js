@@ -491,15 +491,14 @@ function initNativeFairyDustFallback() {
  */
 async function fetchGeneratedStory(payload) {
   try {
-    // Gọi thẳng lên server FastAPI (cổng 8000) bằng phương thức POST
-    const response = await fetch(ENDPOINTS.generateStory, {
+    const response = await fetch(`${API_BASE_URL}/stories/generate`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
-      // Chuyển cục payload từ form thành chuỗi JSON để gửi đi
       body: JSON.stringify({
-        user_id: AppState.currentUser?.uid || "11247140", // Ghép ID người dùng thật hoặc test
+        user_id: AppState.currentUser?.uid || "11247140",
         language: payload.language,
         level: payload.level,
         genre: payload.genre,
@@ -513,7 +512,20 @@ async function fetchGeneratedStory(payload) {
       throw new Error(errorData.detail || `Server error: HTTP ${response.status}`);
     }
 
-    const storyData = await response.json();
+    // Lấy cục dữ liệu thô từ Backend của Member 2
+    const backendData = await response.json();
+
+    const storyData = {
+      title: backendData.title,
+      content: backendData.chapter_content, // <--- Đổi chapter_content thành content để HTML đọc được
+      vocabulary: backendData.vocabulary,
+      
+      language: payload.language,
+      level: payload.level,
+      genre: payload.genre,
+      topic: payload.topic
+    };
+
     return storyData;
 
   } catch (error) {
