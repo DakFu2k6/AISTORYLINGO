@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database import get_session
@@ -95,7 +96,7 @@ def make_choice_and_continue(story_id: int, request: ChoiceRequest, db: Session 
     # Bước 1: Lấy nội dung chương cũ từ Database để AI biết bối cảnh
     old_chapter = db.get(Chapter, request.chapter_id)
     if not old_chapter:
-        return {"error": "Không tìm thấy chương truyện này!"}
+        raise HTTPException(status_code=404, detail="Không tìm thấy chương truyện này trong cơ sở dữ liệu!")
 
     # Bước 2: Lưu sự lựa chọn của người dùng vào bảng 'choices'
     user_choice = Choice(

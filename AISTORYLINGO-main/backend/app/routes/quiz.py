@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.database import get_session
-# Kéo các bảng liên quan đến bài tập và từ vựng vào
 from app.models import Quiz, QuizResult, UserVocabulary
 
 router = APIRouter(prefix="/quiz", tags=["Hệ Thống Trò Chơi & Bài Tập"])
@@ -28,7 +28,7 @@ def submit_quiz(request: SubmitQuizRequest, db: Session = Depends(get_session)):
     # Lấy câu hỏi từ Database để đối chiếu đáp án
     quiz_obj = db.get(Quiz, request.quiz_id)
     if not quiz_obj:
-        return {"error": "Không tìm thấy câu hỏi này!"}
+        raise HTTPException(status_code=404, detail="Không tìm thấy câu hỏi này trong cơ sở dữ liệu!")
 
     # So sánh đáp án của user với đáp án chuẩn
     is_correct = (request.answer.strip().upper() == quiz_obj.correct_answer.strip().upper())
