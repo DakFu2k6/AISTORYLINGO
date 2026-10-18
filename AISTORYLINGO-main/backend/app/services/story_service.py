@@ -21,7 +21,7 @@ class StoryService:
             target_words=target_words
         )
         response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             contents=prompt
         )
         raw_text = response.text
@@ -40,7 +40,7 @@ class StoryService:
         Chỉ trả về nội dung câu chuyện, không thêm văn bản thừa.
         """
         response = self.client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             contents=prompt
         )
         return response.text
