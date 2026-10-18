@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-
 from app.database import get_session
 from app.models import Story, Chapter, Vocabulary
-# Gọi cái service Gemini mà bạn đã cấu hình trước đó
 from app.services.story_service import StoryService
+from app.models import Choice
 
 # Tạo router cho toàn bộ tính năng liên quan đến Truyện
 router = APIRouter(prefix="/stories", tags=["Hệ Thống Truyện (Stories)"])
@@ -80,4 +79,57 @@ def generate_and_save_story(request: GenerateStoryRequest, db: Session = Depends
         "title": new_story.title,
         "chapter_content": new_chapter.content,
         "vocabulary": ai_response.vocabulary
+    }
+
+class ChoiceRequest(BaseModel):
+    chapter_id: int
+    choice_text: str  # Ví dụ: "Investigate the signal"
+    chapter_number: int # Số thứ tự của chương tiếp theo
+
+# 2. API xử lý rẽ nhánh
+@router.post("/{story_id}/next-chapter")
+def make_choice_and_continue(story_id: int, request: ChoiceRequest, db: Session = Depends(get_session)):
+    """
+    API xử lý khi người dùng đưa ra quyết định để đi tiếp cốt truyện.
+    """
+    # Bước 1: Lấy nội dung chương cũ từ Database để AI biết bối cảnh
+    old_chapter = db.get(Chapter, request.chapter_id)
+    if not old_chapter:
+        return {"error": "Không tìm thấy chương truyện này!"}
+
+    # Bước 2: Lưu sự lựa chọn của người dùng vào bảng 'choices'
+    user_choice = Choice(
+        chapter_id=old_chapter.id,
+        choice_text=request.choice_text
+    )
+    db.add(user_choice)
+    db.commit()
+    db.refresh(user_choice)
+
+    # Bước 3: Đưa bối cảnh và lựa chọn cho Gemini viết tiếp chương mới
+    ai_service = StoryService()
+    new_story_content = ai_service.generate_next_chapter(
+        previous_content=old_chapter.content,
+        user_choice=request.choice_text
+    )
+
+    # Bước 4: Lưu chương mới mà AI vừa viết vào bảng 'chapters'
+    new_chapter = Chapter(
+        story_id=story_id,
+        chapter_number=request.chapter_number,
+        content=new_story_content
+    )
+    db.add(new_chapter)
+    db.commit()
+    db.refresh(new_chapter)
+
+    # Bước 5: Cập nhật khóa ngoại - Báo cho Database biết lựa chọn cũ dẫn tới chương mới nào
+    user_choice.next_chapter_id = new_chapter.id
+    db.commit()
+
+    # Trả về kết quả cho Frontend hiển thị chương tiếp theo
+    return {
+        "message": "Đã viết xong chương tiếp theo!",
+        "new_chapter_id": new_chapter.id,
+        "content": new_chapter.content
     }
