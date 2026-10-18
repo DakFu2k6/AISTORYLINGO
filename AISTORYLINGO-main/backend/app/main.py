@@ -3,8 +3,8 @@ from app.database import create_db_and_tables
 from app import models 
 
 from app.routes import auth
-# 1. Nhập thêm cái router truyện mình vừa viết
-from app.routes import stories 
+from app.routes import stories
+from app.routes import vocabulary 
 
 app = FastAPI(title="AI StoryLingo API", version="0.1.0")
 
@@ -12,9 +12,10 @@ app = FastAPI(title="AI StoryLingo API", version="0.1.0")
 def on_startup():
     create_db_and_tables()
 
-# 2. Gắn các Router vào ứng dụng
 app.include_router(auth.router)
-app.include_router(stories.router) 
+app.include_router(stories.router)
+# 2. Gắn router từ vựng vào ứng dụng
+app.include_router(vocabulary.router) 
 
 @app.get("/")
 def root():
