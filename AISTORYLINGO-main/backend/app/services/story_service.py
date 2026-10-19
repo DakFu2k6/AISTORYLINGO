@@ -43,10 +43,11 @@ class StoryService:
             # BẪY LỖI: Bắt mọi lỗi 503, 404, quá tải, đứt mạng...
             print(f"Lỗi API Gemini: {e}. Kích hoạt truyện dự phòng!")
             
-            # Trả về dữ liệu giả lập chuẩn cấu trúc để Frontend không bị vỡ và Database vẫn lưu được
+            # Đã bổ sung 'level' và đổi 'chapter_content' thành 'story' để khớp 100% với StoryResponse
             fallback_data = {
                 "title": "The Backup Story: Return of the Stargazer",
-                "chapter_content": f"This is a fallback story because the AI model is currently resting. You wanted a {genre} story about {topic} at {level} level in {language}. The stardust guardian smiled and handed you a backup book bound in aurora light. Everything is still working perfectly in the database!",
+                "level": level,
+                "story": f"This is a fallback story because the AI model is currently resting. You wanted a {genre} story about {topic} at {level} level in {language}. The stardust guardian smiled and handed you a backup book bound in aurora light. Everything is still working perfectly in the database!",
                 "vocabulary": [
                     {
                         "word": "fallback",
