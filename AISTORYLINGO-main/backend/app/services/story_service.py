@@ -24,7 +24,7 @@ class StoryService:
             
             # Gọi API thật với model chuẩn ổn định nhất
             response = self.client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-3.8-flash",
                 contents=prompt
             )
             
@@ -82,7 +82,7 @@ class StoryService:
             Chỉ trả về nội dung câu chuyện, không thêm văn bản thừa.
             """
             response = self.client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-3.8-flash",
                 contents=prompt
             )
             return response.text
