@@ -323,7 +323,8 @@ class FirebaseAuthService {
   _simulateAuthSuccess(displayName, emailOrId) {
     AppState.isLoggedIn = true;
     AppState.currentUser = {
-      uid: 'sim_' + Date.now(),
+      // uid: 'sim_' + Date.now(), // <-- BỎ DÒNG NÀY 
+      uid: '11247140',             // <-- SỬA THÀNH ID CÓ THẬT TRONG DATABASE 
       displayName: displayName,
       email: emailOrId,
       photoURL: null,
