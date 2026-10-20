@@ -62,9 +62,14 @@ def generate_and_save_story(request: GenerateStoryRequest, db: Session = Depends
             example=vocab.example
         )
         db.add(new_vocab)
-        db.commit() # Phải commit từng từ để DB tạo ID
-        db.refresh(new_vocab)
-        saved_vocabs.append(new_vocab) # Danh sách này giờ đã có sẵn .id
+        saved_vocabs.append(new_vocab) # Gom toàn bộ từ vựng vào danh sách chờ
+        
+    # Commit 1 LẦN DUY NHẤT sau khi vòng lặp kết thúc
+    db.commit() 
+    
+    # Refresh lại danh sách để Database cấp ID cho từng từ
+    for v in saved_vocabs:
+        db.refresh(v)
         
     # BƯỚC 5: Gói gọn dữ liệu trả về cho Frontend hiển thị
     return {
@@ -72,7 +77,7 @@ def generate_and_save_story(request: GenerateStoryRequest, db: Session = Depends
         "story_id": new_story.id,
         "title": new_story.title,
         "chapter_content": new_chapter.content,
-        "vocabulary": saved_vocabs # <--- Đổi thành saved_vocabs
+        "vocabulary": saved_vocabs
     }
 
 # ==========================================
