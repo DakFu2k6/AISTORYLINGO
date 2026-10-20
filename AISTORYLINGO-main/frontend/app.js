@@ -564,6 +564,38 @@ async function fetchSavedVocabulary(userId) {
   }
 }
 
+/**
+ * Gửi yêu cầu lưu từ vựng vào bảng UserVocabulary
+ */
+async function saveVocabToDatabase(vocabId, btnElement) {
+  const userId = AppState.currentUser?.uid || "11247140";
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/vocabulary/save`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        vocabulary_id: vocabId
+      })
+    });
+
+    if (!response.ok) throw new Error("Lỗi khi lưu từ vựng");
+
+    // Đổi giao diện nút bấm thành trạng thái đã lưu
+    btnElement.innerHTML = '✅ Đã lưu vào Sổ tay';
+    btnElement.style.background = '#4CAF50';
+    btnElement.style.color = '#fff';
+    btnElement.disabled = true;
+
+  } catch (error) {
+    console.error("Lỗi:", error);
+    btnElement.innerHTML = '❌ Lỗi thử lại';
+  }
+}
+
 /* ───────────────────────────────────────────────────────────
    6. UI RENDERING LAYER
    ═══════════════════════════════════════════════════════════
