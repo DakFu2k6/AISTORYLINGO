@@ -2,10 +2,13 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-
 from app.database import get_session
 # Import bảng Vocabulary (thông tin từ vựng) và UserVocabulary (sổ tay cá nhân)
 from app.models import Vocabulary, UserVocabulary
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.database import get_db 
+from app.models import Story
 
 router = APIRouter(prefix="/vocabulary", tags=["Hệ Thống Học Từ Vựng"])
 
@@ -79,3 +82,8 @@ def get_user_vocabulary(user_id: str, db: Session = Depends(get_session)):
         "total_words": len(vocab_list),
         "vocabularies": vocab_list
     }
+    
+@router.get("/vocabulary/user/{user_id}")
+def get_user_vocabulary(user_id: str, db: Session = Depends(get_db)):
+    return {"data": []} 
+
