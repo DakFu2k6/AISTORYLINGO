@@ -596,6 +596,33 @@ async function saveVocabToDatabase(vocabId, btnElement) {
   }
 }
 
+/**
+ * Lấy chi tiết truyện từ Backend và hiển thị lên giao diện
+ */
+async function readStory(storyId) {
+  try {
+    const resultSection = document.querySelector('#story-result');
+    if (resultSection) {
+      resultSection.innerHTML = '<div style="text-align: center; color: #EECA69; padding: 40px;">Opening the cosmic book... 📖</div>';
+      resultSection.removeAttribute('hidden');
+      resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Gọi API bạn vừa viết ở Backend
+    const response = await fetch(`${API_BASE_URL}/stories/${storyId}`);
+    if (!response.ok) throw new Error("Lỗi khi mở truyện");
+    
+    const storyData = await response.json();
+    
+    // Tái sử dụng hàm vẽ truyện lúc Generate Story để hiển thị lại
+    renderStoryResult(storyData);
+    
+  } catch (error) {
+    console.error("Lỗi:", error);
+    displayError("Không thể mở lại câu chuyện này. Vui lòng thử lại!");
+  }
+}
+
 /* ───────────────────────────────────────────────────────────
    6. UI RENDERING LAYER
    ═══════════════════════════════════════════════════════════

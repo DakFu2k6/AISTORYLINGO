@@ -140,3 +140,29 @@ def get_story_history(user_id: str, db: Session = Depends(get_session)):
     if not stories:
         return {"message": "Chưa có câu chuyện nào.", "data": []}
     return {"data": stories}
+
+# API 4: Lấy chi tiết một câu truyện để đọc lại
+@router.get("/{story_id}")
+def get_story_details(story_id: int, db: Session = Depends(get_session)):
+    # 1. Tìm thông tin chung của truyện
+    story = db.get(Story, story_id)
+    if not story:
+        raise HTTPException(status_code=404, detail="Không tìm thấy truyện này")
+        
+    # 2. Lấy toàn bộ nội dung các chương của truyện này
+    statement_chapters = select(Chapter).where(Chapter.story_id == story_id).order_by(Chapter.chapter_number)
+    chapters = db.exec(statement_chapters).all()
+    
+    # Ghép nội dung các chương lại với nhau (nếu truyện có nhiều chương)
+    full_content = "\n\n".join([f"Chương {c.chapter_number}:\n{c.content}" for c in chapters])
+    
+    # 3. Trả về cấu trúc JSON y hệt như lúc tạo truyện mới để Frontend dễ hiển thị
+    return {
+        "title": story.title,
+        "language": story.language,
+        "level": story.level,
+        "genre": story.genre,
+        "topic": story.topic or "N/A",
+        "content": full_content,
+        "vocabulary": [] # Tạm để trống từ vựng (giải thích ở bên dưới)
+    }
