@@ -1,15 +1,10 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from sqlmodel import Session, select
 from app.database import get_session
-# Import bảng Vocabulary (thông tin từ vựng) và UserVocabulary (sổ tay cá nhân)
 from app.models import Vocabulary, UserVocabulary
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.database import get_db 
-from app.models import Story
 
+# Khởi tạo router
 router = APIRouter(prefix="/vocabulary", tags=["Hệ Thống Học Từ Vựng"])
 
 # 1. Form dữ liệu khi Frontend gửi yêu cầu lưu từ vựng
@@ -20,30 +15,22 @@ class SaveVocabRequest(BaseModel):
 # 2. API Lưu từ vựng vào sổ tay
 @router.post("/save")
 def save_vocabulary(request: SaveVocabRequest, db: Session = Depends(get_session)):
-    """
-    API này chạy khi người dùng bấm "+ Add to vocabulary".
-    Nếu từ này chưa có trong sổ tay -> Thêm mới.
-    Nếu có rồi -> Tăng số lần ôn tập (times_reviewed) lên 1.
-    """
-    # Bước 1: Kiểm tra xem user đã lưu từ này vào sổ tay chưa
     statement = select(UserVocabulary).where(
         UserVocabulary.user_id == request.user_id,
         UserVocabulary.vocabulary_id == request.vocabulary_id
     )
-    existing_word = db.execute(statement).scalars().first()
+    existing_word = db.exec(statement).first()
 
-    # Bước 2: Nếu đã lưu rồi thì cộng dồn số lần xem (Rất hữu ích để đánh giá mức độ nhớ từ)
     if existing_word:
         existing_word.times_reviewed += 1
         db.commit()
         return {"message": "Đã ôn lại từ vựng!", "data": existing_word}
 
-    # Bước 3: Nếu chưa lưu thì tạo bản ghi mới trong sổ tay
     new_user_vocab = UserVocabulary(
         user_id=request.user_id,
         vocabulary_id=request.vocabulary_id,
         times_reviewed=1,
-        mastery_level=0, # Mới lưu nên độ thông thạo bằng 0
+        mastery_level=0,
         correct_answers=0
     )
     db.add(new_user_vocab)
@@ -52,20 +39,15 @@ def save_vocabulary(request: SaveVocabRequest, db: Session = Depends(get_session
     
     return {"message": "Đã thêm từ vựng mới vào sổ tay!", "data": new_user_vocab}
 
-
 # 3. API Lấy danh sách sổ tay từ vựng của một user
 @router.get("/user/{user_id}")
 def get_user_vocabulary(user_id: str, db: Session = Depends(get_session)):
-    """
-    API này dùng để hiển thị danh sách từ vựng trên trang Dashboard.
-    Nó sẽ kết hợp (JOIN) bảng Vocabulary và UserVocabulary lại với nhau.
-    """
-    # Lấy thông tin từ cả 2 bảng: Từ vựng là gì (Vocabulary) và User đã học tới đâu (UserVocabulary)
     statement = select(Vocabulary, UserVocabulary).join(
         UserVocabulary, Vocabulary.id == UserVocabulary.vocabulary_id
     ).where(UserVocabulary.user_id == user_id)
     
-    results = db.execute(statement).all()
+    # Lấy dữ liệu bằng SQLModel
+    results = db.exec(statement).all()
     
     vocab_list = []
     for vocab, user_vocab in results:
@@ -77,13 +59,9 @@ def get_user_vocabulary(user_id: str, db: Session = Depends(get_session)):
             "mastery_level": user_vocab.mastery_level
         })
         
+    # Đã đổi key "vocabularies" thành "data" để khớp 100% với Frontend của Member 1
     return {
         "message": "Lấy danh sách từ vựng thành công!", 
         "total_words": len(vocab_list),
-        "vocabularies": vocab_list
+        "data": vocab_list
     }
-    
-@router.get("/vocabulary/user/{user_id}")
-def get_user_vocabulary(user_id: str, db: Session = Depends(get_db)):
-    return {"data": []} 
-
