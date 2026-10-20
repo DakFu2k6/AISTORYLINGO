@@ -39,6 +39,7 @@ def generate_and_save_story(request: GenerateStoryRequest, db: Session = Depends
         genre=request.genre,
         language=request.language,
         level=request.level,
+        topic=request.topic,
         status="in_progress"
     )
     db.add(new_story)
@@ -163,7 +164,7 @@ def get_story_details(story_id: int, db: Session = Depends(get_session)):
         "language": story.language,
         "level": story.level,
         "genre": story.genre,
+        "topic": story.topic or "N/A",
         "content": full_content,
         "vocabulary": vocabs # <--- Trả về danh sách từ vựng thật
     }
-    

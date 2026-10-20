@@ -28,6 +28,7 @@ class Story(SQLModel, table=True):
     title: str
     description: Optional[str] = None
     genre: str
+    topic: Optional[str] = None
     language: str
     level: str
     status: str = Field(default="in_progress")
