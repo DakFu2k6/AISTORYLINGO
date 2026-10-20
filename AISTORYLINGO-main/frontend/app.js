@@ -861,6 +861,84 @@ function setLoadingState(isLoading) {
   }
 }
 
+/**
+ * Vẽ giao diện Lịch sử truyện
+ */
+function renderStoryHistory(stories) {
+  const resultSection = document.querySelector('#story-result');
+  if (!resultSection) return;
+
+  resultSection.innerHTML = '<h2 class="story-title">📖 Your Cosmic History</h2>';
+
+  if (!stories || stories.length === 0) {
+    resultSection.innerHTML += '<p class="story-body">You haven\'t woven any tales yet. Generate your first story!</p>';
+    resultSection.removeAttribute('hidden');
+    return;
+  }
+
+  const list = document.createElement('div');
+  stories.forEach(story => {
+    // Dùng lại style của story-meta cho đồng bộ
+    const card = document.createElement('div');
+    card.style.padding = '20px';
+    card.style.margin = '15px 0';
+    card.style.background = 'rgba(255, 255, 255, 0.05)';
+    card.style.borderRadius = '12px';
+    card.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+
+    card.innerHTML = `
+      <h3 style="color: #EECA69; margin-bottom: 10px;">${story.title}</h3>
+      <p style="color: #ccc; font-size: 0.9em; margin-bottom: 10px;">
+        🌌 Language: ${story.language} | 📊 Level: ${story.level} | 🎭 Genre: ${story.genre}
+      </p>
+      <p style="color: #888; font-size: 0.8em;">Created: ${new Date(story.created_at).toLocaleDateString()}</p>
+    `;
+    list.appendChild(card);
+  });
+
+  resultSection.appendChild(list);
+  resultSection.removeAttribute('hidden');
+  resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/**
+ * Vẽ giao diện Từ vựng / Flashcard
+ */
+function renderSavedVocabulary(vocabList, isFlashcard = false) {
+  const resultSection = document.querySelector('#story-result');
+  if (!resultSection) return;
+
+  resultSection.innerHTML = `<h2 class="story-title">${isFlashcard ? '📇 Constellation Flashcards' : '📚 Saved Vocabulary'}</h2>`;
+
+  if (!vocabList || vocabList.length === 0) {
+    resultSection.innerHTML += '<p class="story-body">No vocabulary saved yet!</p>';
+    resultSection.removeAttribute('hidden');
+    return;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'vocab-list';
+
+  vocabList.forEach(item => {
+    // Tái sử dụng class 'vocab-card' của Member 1 đã làm rất đẹp
+    const card = document.createElement('article');
+    card.className = 'vocab-card';
+    card.innerHTML = `
+      <div>
+        <span class="vocab-word">${item.word}</span>
+        ${item.pronunciation ? `<span class="vocab-pronunciation">${item.pronunciation}</span>` : ''}
+      </div>
+      <p class="vocab-meaning">${item.meaning}</p>
+      ${item.example ? `<p class="vocab-example">"${item.example}"</p>` : ''}
+    `;
+    list.appendChild(card);
+  });
+
+  resultSection.appendChild(list);
+  resultSection.removeAttribute('hidden');
+  resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 /* ───────────────────────────────────────────────────────────
    7. CLIENT-SIDE VALIDATION
    ═══════════════════════════════════════════════════════════
