@@ -6,6 +6,10 @@ from app.database import get_session
 from app.models import Story, Chapter, Vocabulary
 from app.services.story_service import StoryService
 from app.models import Choice
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.database import get_db 
+from app.models import Story
 
 # Tạo router cho toàn bộ tính năng liên quan đến Truyện
 router = APIRouter(prefix="/stories", tags=["Hệ Thống Truyện (Stories)"])
@@ -134,3 +138,12 @@ def make_choice_and_continue(story_id: int, request: ChoiceRequest, db: Session 
         "new_chapter_id": new_chapter.id,
         "content": new_chapter.content
     }
+    
+router = APIRouter()
+@router.get("/stories/history/{user_id}")
+def get_story_history(user_id: str, db: Session = Depends(get_db)):
+    # Lấy toàn bộ truyện của user, sắp xếp mới nhất lên đầu
+    stories = db.query(Story).filter(Story.user_id == user_id).order_by(Story.created_at.desc()).all()
+    if not stories:
+        return {"message": "Chưa có câu chuyện nào.", "data": []}
+    return {"data": stories}
