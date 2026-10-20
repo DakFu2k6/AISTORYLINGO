@@ -163,7 +163,7 @@ def get_story_details(story_id: int, db: Session = Depends(get_session)):
         "language": story.language,
         "level": story.level,
         "genre": story.genre,
-        "topic": story.topic or "N/A",
         "content": full_content,
         "vocabulary": vocabs # <--- Trả về danh sách từ vựng thật
     }
+    
