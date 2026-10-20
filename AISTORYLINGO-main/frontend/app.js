@@ -803,6 +803,20 @@ function renderStoryResult(data) {
         example.textContent = `"${item.example}"`;
         card.appendChild(example);
       }
+      
+      const saveBtn = document.createElement('button');
+      saveBtn.style.marginTop = '10px';
+      saveBtn.style.padding = '5px 10px';
+      saveBtn.style.background = '#EECA69';
+      saveBtn.style.color = '#000';
+      saveBtn.style.border = 'none';
+      saveBtn.style.borderRadius = '5px';
+      saveBtn.style.cursor = 'pointer';
+      saveBtn.innerHTML = '✦ Add to Sổ tay';
+      
+      // Khi bấm nút sẽ gọi hàm lưu
+      saveBtn.onclick = () => saveVocabToDatabase(item.id, saveBtn);
+      card.appendChild(saveBtn);
 
       list.appendChild(card);
     });
