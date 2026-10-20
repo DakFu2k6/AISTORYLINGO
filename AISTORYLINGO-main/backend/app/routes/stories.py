@@ -53,7 +53,8 @@ def generate_and_save_story(request: GenerateStoryRequest, db: Session = Depends
     )
     db.add(new_chapter)
     
-    # BƯỚC 4: Lưu các từ vựng AI vừa tạo vào Database
+    # BƯỚC 4: Lưu các từ vựng AI vừa tạo vào Database và lấy ID
+    saved_vocabs = []
     for vocab in ai_response.vocabulary:
         new_vocab = Vocabulary(
             word=vocab.word,
@@ -61,16 +62,17 @@ def generate_and_save_story(request: GenerateStoryRequest, db: Session = Depends
             example=vocab.example
         )
         db.add(new_vocab)
+        db.commit() # Phải commit từng từ để DB tạo ID
+        db.refresh(new_vocab)
+        saved_vocabs.append(new_vocab) # Danh sách này giờ đã có sẵn .id
         
-    db.commit()
-    
     # BƯỚC 5: Gói gọn dữ liệu trả về cho Frontend hiển thị
     return {
         "message": "AI đã tạo và lưu truyện thành công!",
         "story_id": new_story.id,
         "title": new_story.title,
         "chapter_content": new_chapter.content,
-        "vocabulary": ai_response.vocabulary
+        "vocabulary": saved_vocabs # <--- Đổi thành saved_vocabs
     }
 
 # ==========================================
