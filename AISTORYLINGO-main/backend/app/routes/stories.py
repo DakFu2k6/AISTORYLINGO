@@ -59,10 +59,11 @@ def generate_and_save_story(request: GenerateStoryRequest, db: Session = Depends
         new_vocab = Vocabulary(
             word=vocab.word,
             meaning=vocab.meaning,
-            example=vocab.example
+            example=vocab.example,
+            story_id=new_story.id  # <--- Báo cho Database biết từ này thuộc về truyện vừa tạo
         )
         db.add(new_vocab)
-        saved_vocabs.append(new_vocab) # Gom toàn bộ từ vựng vào danh sách chờ
+        saved_vocabs.append(new_vocab)
         
     # Commit 1 LẦN DUY NHẤT sau khi vòng lặp kết thúc
     db.commit() 
@@ -144,19 +145,19 @@ def get_story_history(user_id: str, db: Session = Depends(get_session)):
 # API 4: Lấy chi tiết một câu truyện để đọc lại
 @router.get("/{story_id}")
 def get_story_details(story_id: int, db: Session = Depends(get_session)):
-    # 1. Tìm thông tin chung của truyện
     story = db.get(Story, story_id)
     if not story:
         raise HTTPException(status_code=404, detail="Không tìm thấy truyện này")
-        
-    # 2. Lấy toàn bộ nội dung các chương của truyện này
+
+    # Kéo các chương truyện
     statement_chapters = select(Chapter).where(Chapter.story_id == story_id).order_by(Chapter.chapter_number)
     chapters = db.exec(statement_chapters).all()
-    
-    # Ghép nội dung các chương lại với nhau (nếu truyện có nhiều chương)
     full_content = "\n\n".join([f"Chương {c.chapter_number}:\n{c.content}" for c in chapters])
-    
-    # 3. Trả về cấu trúc JSON y hệt như lúc tạo truyện mới để Frontend dễ hiển thị
+
+    # Kéo từ vựng ĐÃ ĐƯỢC GẮN VỚI TRUYỆN NÀY
+    statement_vocabs = select(Vocabulary).where(Vocabulary.story_id == story_id)
+    vocabs = db.exec(statement_vocabs).all()
+
     return {
         "title": story.title,
         "language": story.language,
@@ -164,5 +165,5 @@ def get_story_details(story_id: int, db: Session = Depends(get_session)):
         "genre": story.genre,
         "topic": story.topic or "N/A",
         "content": full_content,
-        "vocabulary": [] # Tạm để trống từ vựng (giải thích ở bên dưới)
+        "vocabulary": vocabs # <--- Trả về danh sách từ vựng thật
     }

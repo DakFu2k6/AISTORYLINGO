@@ -57,6 +57,7 @@ class Vocabulary(SQLModel, table=True):
     pronunciation: Optional[str] = None
     example: Optional[str] = None
     difficulty: Optional[str] = None
+    story_id: Optional[int] = Field(default=None, foreign_key="stories.id")
 
 class UserVocabulary(SQLModel, table=True):
     __tablename__ = "user_vocabulary"

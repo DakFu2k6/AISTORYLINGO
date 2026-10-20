@@ -964,7 +964,10 @@ function renderStoryHistory(stories) {
       <p style="color: #ccc; font-size: 0.9em; margin-bottom: 10px;">
         🌌 Language: ${story.language} | 📊 Level: ${story.level} | 🎭 Genre: ${story.genre}
       </p>
-      <p style="color: #888; font-size: 0.8em;">Created: ${new Date(story.created_at).toLocaleDateString()}</p>
+      <p style="color: #888; font-size: 0.8em; margin-bottom: 15px;">Created: ${new Date(story.created_at).toLocaleDateString()}</p>
+      <button style="padding: 8px 15px; background: #EECA69; color: #000; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;" onclick="readStory(${story.id})">
+        ✦ Đọc lại (Read Again)
+      </button>
     `;
     list.appendChild(card);
   });
