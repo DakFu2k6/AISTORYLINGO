@@ -1020,7 +1020,6 @@ async function handleStoryFormSubmit(event) {
   event.preventDefault();
 
   if (AppState.isGenerating) return;
-
   const form = event.target;
   const payload = validateStoryForm(form);
 
@@ -1088,6 +1087,9 @@ async function handleAuthFormSubmit(event) {
 /**
  * Handles Top Navigation clicks via event delegation.
  */
+/**
+ * Handles Top Navigation clicks via event delegation.
+ */
 function handleNavClick(event) {
   const authTrigger = event.target.closest('#nav-auth-trigger');
   if (authTrigger) {
@@ -1108,7 +1110,30 @@ function handleNavClick(event) {
       showAuthModal('login');
       setAuthStatus('Please sign in to access this feature.', 'error');
     } else {
-      alert(`✦ Navigating to ${protectedLink.textContent.trim()} (Logged in as ${AppState.currentUser.displayName})`);
+      // ĐÃ XÓA ALERT - CHUYỂN SANG GỌI API THẬT
+      const linkText = protectedLink.textContent.trim().toLowerCase();
+      const userId = AppState.currentUser.uid;
+      
+      const resultSection = document.querySelector('#story-result');
+      if (resultSection) {
+        resultSection.innerHTML = '<div style="text-align: center; color: #EECA69; padding: 40px;">Retrieving cosmic data... 🌌</div>';
+        resultSection.removeAttribute('hidden');
+      }
+
+      // Điều hướng dựa vào tên của nút bấm
+      if (linkText.includes('history')) {
+        fetchStoryHistory(userId)
+          .then(data => renderStoryHistory(data))
+          .catch(err => displayError("Failed to load history."));
+      } else if (linkText.includes('vocabulary')) {
+        fetchSavedVocabulary(userId)
+          .then(data => renderSavedVocabulary(data, false))
+          .catch(err => displayError("Failed to load vocabulary."));
+      } else if (linkText.includes('flashcard')) {
+        fetchSavedVocabulary(userId)
+          .then(data => renderSavedVocabulary(data, true)) // Render kiểu flashcard
+          .catch(err => displayError("Failed to load flashcards."));
+      }
     }
   }
 }
