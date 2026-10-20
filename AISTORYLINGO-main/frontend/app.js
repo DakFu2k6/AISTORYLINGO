@@ -534,6 +534,36 @@ async function fetchGeneratedStory(payload) {
   }
 }
 
+/**
+ * Lấy lịch sử truyện của user
+ */
+async function fetchStoryHistory(userId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/stories/history/${userId}`);
+    if (!response.ok) throw new Error("Failed to fetch story history");
+    const result = await response.json();
+    return result.data; // Trả về mảng truyện từ FastAPI
+  } catch (error) {
+    console.error('[API] Lỗi lấy lịch sử:', error);
+    throw error;
+  }
+}
+
+/**
+ * Lấy danh sách từ vựng đã lưu
+ */
+async function fetchSavedVocabulary(userId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/vocabulary/user/${userId}`);
+    if (!response.ok) throw new Error("Failed to fetch vocabulary");
+    const result = await response.json();
+    return result.data; // Trả về mảng từ vựng từ FastAPI
+  } catch (error) {
+    console.error('[API] Lỗi lấy từ vựng:', error);
+    throw error;
+  }
+}
+
 /* ───────────────────────────────────────────────────────────
    6. UI RENDERING LAYER
    ═══════════════════════════════════════════════════════════
