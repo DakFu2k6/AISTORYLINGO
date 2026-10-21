@@ -980,6 +980,9 @@ function renderStoryHistory(stories) {
 /**
  * Vẽ giao diện Từ vựng / Flashcard
  */
+/**
+ * Vẽ giao diện Từ vựng HOẶC Flashcard lật 3D
+ */
 function renderSavedVocabulary(vocabList, isFlashcard = false) {
   const resultSection = document.querySelector('#story-result');
   if (!resultSection) return;
@@ -987,28 +990,72 @@ function renderSavedVocabulary(vocabList, isFlashcard = false) {
   resultSection.innerHTML = `<h2 class="story-title">${isFlashcard ? '📇 Constellation Flashcards' : '📚 Saved Vocabulary'}</h2>`;
 
   if (!vocabList || vocabList.length === 0) {
-    resultSection.innerHTML += '<p class="story-body">No vocabulary saved yet!</p>';
+    resultSection.innerHTML += '<p class="story-body">Chưa có từ vựng nào trong sổ tay!</p>';
     resultSection.removeAttribute('hidden');
     return;
   }
 
   const list = document.createElement('div');
-  list.className = 'vocab-list';
 
-  vocabList.forEach(item => {
-    // Tái sử dụng class 'vocab-card' của Member 1 đã làm rất đẹp
-    const card = document.createElement('article');
-    card.className = 'vocab-card';
-    card.innerHTML = `
-      <div>
-        <span class="vocab-word">${item.word}</span>
-        ${item.pronunciation ? `<span class="vocab-pronunciation">${item.pronunciation}</span>` : ''}
-      </div>
-      <p class="vocab-meaning">${item.meaning}</p>
-      ${item.example ? `<p class="vocab-example">"${item.example}"</p>` : ''}
-    `;
-    list.appendChild(card);
-  });
+  if (isFlashcard) {
+    // CHẾ ĐỘ FLASHCARD: Thẻ lật 3D
+    list.style.display = 'flex';
+    list.style.flexWrap = 'wrap';
+    list.style.gap = '20px';
+    list.style.justifyContent = 'center';
+    list.style.marginTop = '20px';
+
+    vocabList.forEach(item => {
+      const cardContainer = document.createElement('div');
+      // Thiết lập không gian 3D cho thẻ
+      cardContainer.style.perspective = '1000px';
+      cardContainer.style.width = '320px';
+      cardContainer.style.height = '200px';
+      cardContainer.style.cursor = 'pointer';
+
+      cardContainer.innerHTML = `
+        <div class="flashcard-inner" style="position: relative; width: 100%; height: 100%; transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1); transform-style: preserve-3d;">
+          
+          <!-- MẶT TRƯỚC (Front) -->
+          <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; background: #1a1a2e; border: 2px solid #EECA69; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <h3 style="color: #EECA69; margin: 0; font-size: 28px;">${item.word}</h3>
+            <p style="color: #666; font-size: 14px; margin-top: 15px;">✦ Click to flip ✦</p>
+          </div>
+          
+          <!-- MẶT SAU (Back) -->
+          <div style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; background: #16213e; border: 2px solid #4CAF50; border-radius: 12px; transform: rotateY(180deg); padding: 25px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <p style="color: #fff; margin: 0 0 10px 0; font-size: 16px;"><strong>Meaning:</strong> ${item.meaning}</p>
+            ${item.example ? `<p style="color: #aaa; font-style: italic; font-size: 14px; margin: 0; line-height: 1.4;">"${item.example}"</p>` : ''}
+          </div>
+          
+        </div>
+      `;
+
+      // Logic lật thẻ khi click
+      let isFlipped = false;
+      cardContainer.addEventListener('click', () => {
+        isFlipped = !isFlipped;
+        const inner = cardContainer.querySelector('.flashcard-inner');
+        inner.style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+      });
+
+      list.appendChild(cardContainer);
+    });
+
+  } else {
+    // CHẾ ĐỘ SAVED VOCABULARY: Danh sách tĩnh (Như cũ)
+    list.className = 'vocab-list';
+    vocabList.forEach(item => {
+      const card = document.createElement('article');
+      card.className = 'vocab-card';
+      card.innerHTML = `
+        <div><span class="vocab-word">${item.word}</span></div>
+        <p class="vocab-meaning">${item.meaning}</p>
+        ${item.example ? `<p class="vocab-example">"${item.example}"</p>` : ''}
+      `;
+      list.appendChild(card);
+    });
+  }
 
   resultSection.appendChild(list);
   resultSection.removeAttribute('hidden');
