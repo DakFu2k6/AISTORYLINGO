@@ -871,7 +871,7 @@ function renderStoryResult(data) {
       saveBtn.style.border = 'none';
       saveBtn.style.borderRadius = '5px';
       saveBtn.style.cursor = 'pointer';
-      saveBtn.innerHTML = '✦ Add to Sổ tay';
+      saveBtn.innerHTML = '✦ Save Vocabulary';
       
       // Khi bấm nút sẽ gọi hàm lưu
       saveBtn.onclick = () => saveVocabToDatabase(item.id, saveBtn);
@@ -966,7 +966,7 @@ function renderStoryHistory(stories) {
       </p>
       <p style="color: #888; font-size: 0.8em; margin-bottom: 15px;">Created: ${new Date(story.created_at).toLocaleDateString()}</p>
       <button style="padding: 8px 15px; background: #EECA69; color: #000; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;" onclick="readStory(${story.id})">
-        ✦ Đọc lại (Read Again)
+        ✦ Read Again
       </button>
     `;
     list.appendChild(card);
