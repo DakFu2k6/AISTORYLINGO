@@ -1170,7 +1170,10 @@ async function handleStoryFormSubmit(event) {
  */
 async function handleAuthFormSubmit(event) {
   event.preventDefault();
-  clearAuthErrors();
+  
+  // 1. Xóa thông báo lỗi cũ
+  const errorElements = document.querySelectorAll('[id^="error-"]');
+  errorElements.forEach(el => el.textContent = '');
 
   const form = event.target;
   const emailInput = form.querySelector('#auth-email');
@@ -1181,20 +1184,21 @@ async function handleAuthFormSubmit(event) {
   const password = passwordInput.value;
   const name = nameInput ? nameInput.value.trim() : '';
 
-  // Validation
+  // 2. Validation an toàn
   let hasError = false;
   if (!email || !email.includes('@')) {
-    document.querySelector('#error-email').textContent = 'Please enter a valid email address.';
+    const errEmail = document.querySelector('#error-email');
+    if (errEmail) errEmail.textContent = 'Vui lòng nhập email hợp lệ.';
     hasError = true;
   }
-
   if (!password || password.length < 6) {
-    document.querySelector('#error-password').textContent = 'Password must be at least 6 characters.';
+    const errPass = document.querySelector('#error-password');
+    if (errPass) errPass.textContent = 'Mật khẩu phải từ 6 ký tự.';
     hasError = true;
   }
-
   if (AppState.authMode === 'register' && !name) {
-    document.querySelector('#error-name').textContent = 'Please enter your traveler name.';
+    const errName = document.querySelector('#error-name');
+    if (errName) errName.textContent = 'Vui lòng nhập tên của bạn.';
     hasError = true;
   }
 
@@ -1202,37 +1206,54 @@ async function handleAuthFormSubmit(event) {
 
   try {
     if (AppState.authMode === 'register') {
+      // LUỒNG 1: GỌI API ĐĂNG KÝ
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name,
-          email: email,
-          password: password 
-        })
+        body: JSON.stringify({ name: name, email: email, password: password })
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || "Không thể tạo tài khoản.");
+
+      AppState.currentUser = { uid: data.user_id, displayName: name, email: email };
+      AppState.isLoggedIn = true;
+      updateNavAuthUI(AppState.currentUser);
+      hideAuthModal();
+      // Hiển thị thông báo đăng ký
+      const statusEl = document.querySelector('#auth-status');
+      if (statusEl) { statusEl.textContent = 'Tạo tài khoản thành công!'; statusEl.style.color = '#4CAF50'; }
+      
+    } else {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: password })
       });
 
       const data = await response.json();
       
-      if (!response.ok) {
-        throw new Error(data.detail || "Không thể tạo tài khoản.");
-      }
+      // Nếu nhập sai mật khẩu, API sẽ trả về lỗi 401 và quăng thẳng xuống phần catch(e)
+      if (!response.ok) throw new Error(data.detail || "Email hoặc mật khẩu không chính xác.");
 
-      AppState.currentUser = { 
-        uid: data.user_id, 
-        displayName: name, 
-        email: email 
-      };
+      AppState.currentUser = { uid: data.user.id, displayName: data.user.name, email: data.user.email };
       AppState.isLoggedIn = true;
       updateNavAuthUI(AppState.currentUser);
       hideAuthModal();
-      setAuthStatus('Welcome to the Constellation!', 'success');
       
-    } else {
-      await authService.handleEmailPassword(AppState.authMode, name, email, password);
+      // Hiển thị thông báo đăng nhập đúng
+      const statusEl = document.querySelector('#auth-status');
+      if (statusEl) { statusEl.textContent = 'Đăng nhập thành công!'; statusEl.style.color = '#4CAF50'; }
     }
   } catch (e) {
-    setAuthStatus(e.message, 'error');
+    // Nếu sai mật khẩu, báo lỗi màu đỏ ngay lập tức
+    const statusEl = document.querySelector('#auth-status');
+    if (statusEl) {
+      statusEl.textContent = e.message;
+      statusEl.style.color = '#ff6b6b';
+    } else {
+      alert(e.message);
+    }
   }
 }
 

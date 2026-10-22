@@ -1,19 +1,19 @@
 import uuid
+import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from passlib.context import CryptContext
 
+# Import các công cụ cơ sở dữ liệu
 from app.database import get_session
 from app.models import User, UserPreference
 
+# Tạo router
 router = APIRouter(prefix="/auth", tags=["Xác Thực & Người Dùng"])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# 1. API ĐĂNG KÝ (TẠO TÀI KHOẢN MỚI)
-
+# 1. API ĐĂNG KÝ (Băm mật khẩu bằng Bcrypt thuần)
 class RegisterRequest(BaseModel):
     name: str
     email: str
@@ -22,10 +22,9 @@ class RegisterRequest(BaseModel):
 @router.post("/register")
 def register_user(data: RegisterRequest, db: Session = Depends(get_session)):
     """
-    Nhận thông tin tạo tài khoản từ giao diện. 
-    Mã hóa mật khẩu bằng bcrypt trước khi lưu xuống Database.
+    Đăng ký tài khoản mới: Băm mật khẩu bằng bcrypt và lưu xuống Supabase.
     """
-    # Bước 1: Kiểm tra xem email đã được đăng ký chưa
+    # 1. Kiểm tra xem email đã tồn tại chưa
     statement = select(User).where(User.email == data.email)
     existing_user = db.execute(statement).scalars().first()
     
@@ -35,15 +34,17 @@ def register_user(data: RegisterRequest, db: Session = Depends(get_session)):
             detail="Email này đã được sử dụng. Vui lòng đăng nhập!"
         )
 
-    # Bước 2: Băm mật khẩu (Mã hóa)
-    hashed_password = pwd_context.hash(data.password)
+    # 2. Băm mật khẩu bằng bcrypt trực tiếp
+    password_bytes = data.password.encode('utf-8')
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password_bytes, salt).decode('utf-8')
 
-    # Bước 3: Tạo ID tự động và lưu thông tin
+    # 3. Tạo user mới và lưu vào cơ sở dữ liệu
     new_user = User(
-        id=str(uuid.uuid4()),  # Tạo chuỗi ID độc nhất
+        id=str(uuid.uuid4()),
         email=data.email,
         name=data.name,
-        password_hash=hashed_password # Lưu mật khẩu đã mã hóa
+        password_hash=hashed_password
     )
     db.add(new_user)
     db.commit()
@@ -52,7 +53,7 @@ def register_user(data: RegisterRequest, db: Session = Depends(get_session)):
     return {"message": "Tạo tài khoản thành công", "user_id": new_user.id}
 
 
-# 2. API ĐĂNG NHẬP BẰNG EMAIL & PASSWORD
+# 2. API ĐĂNG NHẬP (Xác thực mật khẩu)
 class LoginRequest(BaseModel):
     email: str
     password: str
@@ -60,20 +61,27 @@ class LoginRequest(BaseModel):
 @router.post("/login")
 def login_user(data: LoginRequest, db: Session = Depends(get_session)):
     """
-    Kiểm tra email và giải mã mật khẩu xem có khớp với Database hay không.
+    Đăng nhập: Kiểm tra mật khẩu mã hóa trong Database bằng bcrypt.checkpw.
     """
-    # Bước 1: Tìm user theo email
     statement = select(User).where(User.email == data.email)
     user = db.execute(statement).scalars().first()
 
-    # Bước 2: Đối chiếu mật khẩu người dùng nhập với mật khẩu băm trong DB
-    if not user or not user.password_hash or not pwd_context.verify(data.password, user.password_hash):
+    if not user or not user.password_hash:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email hoặc mật khẩu không chính xác!"
         )
 
-    # Bước 3: Trả về thông tin nếu đăng nhập đúng
+    # Đối chiếu mật khẩu bằng bcrypt.checkpw
+    input_pwd_bytes = data.password.encode('utf-8')
+    stored_hash_bytes = user.password_hash.encode('utf-8')
+
+    if not bcrypt.checkpw(input_pwd_bytes, stored_hash_bytes):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email hoặc mật khẩu không chính xác!"
+        )
+
     return {
         "message": "Đăng nhập thành công!",
         "user": {
@@ -82,6 +90,7 @@ def login_user(data: LoginRequest, db: Session = Depends(get_session)):
             "email": user.email
         }
     }
+
 
 # 3. API LƯU THÔNG TIN KHẢO SÁT (ONBOARDING)
 class PreferenceRequest(BaseModel):
@@ -94,9 +103,6 @@ class PreferenceRequest(BaseModel):
 
 @router.post("/preferences")
 def save_preferences(data: PreferenceRequest, db: Session = Depends(get_session)):
-    """
-    Lưu lại các lựa chọn của User (Ví dụ: Học tiếng Anh, Level B1, Thích Mystery...)
-    """
     new_pref = UserPreference(
         user_id=data.user_id,
         language=data.language,
