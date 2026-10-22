@@ -1,56 +1,89 @@
-from fastapi import APIRouter, Depends
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from passlib.context import CryptContext
 
-# Import các công cụ mình đã làm ở Tuần 1
 from app.database import get_session
 from app.models import User, UserPreference
 
-# Tạo router (giống như gom nhóm các API có chung chữ "/auth" ở đầu)
 router = APIRouter(prefix="/auth", tags=["Xác Thực & Người Dùng"])
 
-# ---------------------------------------------------------
-# 1. API ĐĂNG NHẬP LƯU USER VÀO DATABASE
-# ---------------------------------------------------------
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Định nghĩa cái form dữ liệu mà Frontend sẽ gửi lên
-class LoginRequest(BaseModel):
-    uid: str      # Cấu trúc y hệt UID của Firebase
-    email: str
+# 1. API ĐĂNG KÝ (TẠO TÀI KHOẢN MỚI)
+
+class RegisterRequest(BaseModel):
     name: str
+    email: str
+    password: str
+
+@router.post("/register")
+def register_user(data: RegisterRequest, db: Session = Depends(get_session)):
+    """
+    Nhận thông tin tạo tài khoản từ giao diện. 
+    Mã hóa mật khẩu bằng bcrypt trước khi lưu xuống Database.
+    """
+    # Bước 1: Kiểm tra xem email đã được đăng ký chưa
+    statement = select(User).where(User.email == data.email)
+    existing_user = db.execute(statement).scalars().first()
+    
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email này đã được sử dụng. Vui lòng đăng nhập!"
+        )
+
+    # Bước 2: Băm mật khẩu (Mã hóa)
+    hashed_password = pwd_context.hash(data.password)
+
+    # Bước 3: Tạo ID tự động và lưu thông tin
+    new_user = User(
+        id=str(uuid.uuid4()),  # Tạo chuỗi ID độc nhất
+        email=data.email,
+        name=data.name,
+        password_hash=hashed_password # Lưu mật khẩu đã mã hóa
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return {"message": "Tạo tài khoản thành công", "user_id": new_user.id}
+
+
+# 2. API ĐĂNG NHẬP BẰNG EMAIL & PASSWORD
+class LoginRequest(BaseModel):
+    email: str
+    password: str
 
 @router.post("/login")
 def login_user(data: LoginRequest, db: Session = Depends(get_session)):
     """
-    API này nhận dữ liệu từ Frontend sau khi user đăng nhập Firebase thành công.
-    Nếu user chưa có trong database -> Tạo mới.
-    Nếu user có rồi -> Trả về thông tin user đó.
+    Kiểm tra email và giải mã mật khẩu xem có khớp với Database hay không.
     """
-    # Bước 1: Tìm xem uid này đã có trong bảng users chưa
-    statement = select(User).where(User.id == data.uid)
-    existing_user = db.execute(statement).scalars().first()
+    # Bước 1: Tìm user theo email
+    statement = select(User).where(User.email == data.email)
+    user = db.execute(statement).scalars().first()
 
-    # Bước 2: Nếu chưa có (người dùng mới)
-    if not existing_user:
-        new_user = User(
-            id=data.uid,
-            email=data.email,
-            name=data.name
+    # Bước 2: Đối chiếu mật khẩu người dùng nhập với mật khẩu băm trong DB
+    if not user or not user.password_hash or not pwd_context.verify(data.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email hoặc mật khẩu không chính xác!"
         )
-        db.add(new_user)
-        db.commit()      # Lưu vào database
-        db.refresh(new_user)
-        return {"message": "Tạo người dùng mới thành công", "user": new_user}
-    
-    # Bước 3: Nếu có rồi (người dùng cũ đăng nhập lại)
-    return {"message": "Chào mừng bạn quay lại", "user": existing_user}
 
-# ---------------------------------------------------------
-# 2. API LƯU THÔNG TIN KHẢO SÁT (ONBOARDING)
-# ---------------------------------------------------------
+    # Bước 3: Trả về thông tin nếu đăng nhập đúng
+    return {
+        "message": "Đăng nhập thành công!",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }
+    }
 
-# Form dữ liệu sở thích học tập Frontend gửi lên
+# 3. API LƯU THÔNG TIN KHẢO SÁT (ONBOARDING)
 class PreferenceRequest(BaseModel):
     user_id: str
     language: str
@@ -62,9 +95,8 @@ class PreferenceRequest(BaseModel):
 @router.post("/preferences")
 def save_preferences(data: PreferenceRequest, db: Session = Depends(get_session)):
     """
-    API này dùng để lưu lại các lựa chọn của User (Ví dụ: Học tiếng Anh, Level B1, Thích Mystery...)
+    Lưu lại các lựa chọn của User (Ví dụ: Học tiếng Anh, Level B1, Thích Mystery...)
     """
-    # Tạo một bản ghi mới trong bảng user_preferences
     new_pref = UserPreference(
         user_id=data.user_id,
         language=data.language,

@@ -1201,9 +1201,38 @@ async function handleAuthFormSubmit(event) {
   if (hasError) return;
 
   try {
-    await authService.handleEmailPassword(AppState.authMode, name, email, password);
+    if (AppState.authMode === 'register') {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          password: password 
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.detail || "Không thể tạo tài khoản.");
+      }
+
+      AppState.currentUser = { 
+        uid: data.user_id, 
+        displayName: name, 
+        email: email 
+      };
+      AppState.isLoggedIn = true;
+      updateNavAuthUI(AppState.currentUser);
+      hideAuthModal();
+      setAuthStatus('Welcome to the Constellation!', 'success');
+      
+    } else {
+      await authService.handleEmailPassword(AppState.authMode, name, email, password);
+    }
   } catch (e) {
-    // Error is rendered inside authService
+    setAuthStatus(e.message, 'error');
   }
 }
 

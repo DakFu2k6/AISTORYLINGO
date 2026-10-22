@@ -8,6 +8,7 @@ class User(SQLModel, table=True):
     id: str = Field(primary_key=True) # ID lấy từ Firebase
     name: str
     email: str = Field(unique=True, index=True)
+    password_hash: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserPreference(SQLModel, table=True):
