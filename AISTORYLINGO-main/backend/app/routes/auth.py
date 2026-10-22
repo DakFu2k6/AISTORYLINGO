@@ -117,3 +117,40 @@ def save_preferences(data: PreferenceRequest, db: Session = Depends(get_session)
     db.refresh(new_pref)
     
     return {"message": "Đã lưu hồ sơ học tập thành công!", "preferences": new_pref}
+
+# 4. API ĐĂNG NHẬP MẠNG XÃ HỘI (Google / Facebook)
+class SocialLoginRequest(BaseModel):
+    provider: str
+    email: str
+    name: str
+
+@router.post("/social-login")
+def social_login(data: SocialLoginRequest, db: Session = Depends(get_session)):
+    """
+    API giả lập đăng nhập bằng Google/Facebook cho đồ án.
+    Tự động kiểm tra và tạo user nếu chưa tồn tại trong Database.
+    """
+    # Kiểm tra xem email này đã có trong Database chưa
+    statement = select(User).where(User.email == data.email)
+    user = db.execute(statement).scalars().first()
+
+    # Nếu chưa có thì tạo mới ngay lập tức (không cần mật khẩu)
+    if not user:
+        user = User(
+            id=str(uuid.uuid4()),
+            email=data.email,
+            name=data.name,
+            password_hash=f"SOCIAL_LOGIN_{data.provider.upper()}" # Đánh dấu nguồn gốc
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    return {
+        "message": f"Đăng nhập bằng {data.provider.capitalize()} thành công!",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }
+    }

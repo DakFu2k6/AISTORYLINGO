@@ -1171,7 +1171,6 @@ async function handleStoryFormSubmit(event) {
 async function handleAuthFormSubmit(event) {
   event.preventDefault();
   
-  // 1. Xóa thông báo lỗi cũ
   const errorElements = document.querySelectorAll('[id^="error-"]');
   errorElements.forEach(el => el.textContent = '');
 
@@ -1180,11 +1179,10 @@ async function handleAuthFormSubmit(event) {
   const passwordInput = form.querySelector('#auth-password');
   const nameInput = form.querySelector('#auth-name');
 
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
+  const email = emailInput ? emailInput.value.trim() : '';
+  const password = passwordInput ? passwordInput.value : '';
   const name = nameInput ? nameInput.value.trim() : '';
 
-  // 2. Validation an toàn
   let hasError = false;
   if (!email || !email.includes('@')) {
     const errEmail = document.querySelector('#error-email');
@@ -1206,7 +1204,7 @@ async function handleAuthFormSubmit(event) {
 
   try {
     if (AppState.authMode === 'register') {
-      // LUỒNG 1: GỌI API ĐĂNG KÝ
+      // Gọi API Đăng ký
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1220,11 +1218,12 @@ async function handleAuthFormSubmit(event) {
       AppState.isLoggedIn = true;
       updateNavAuthUI(AppState.currentUser);
       hideAuthModal();
-      // Hiển thị thông báo đăng ký
+      
       const statusEl = document.querySelector('#auth-status');
       if (statusEl) { statusEl.textContent = 'Tạo tài khoản thành công!'; statusEl.style.color = '#4CAF50'; }
       
     } else {
+      // Gọi API Đăng nhập thật
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1232,8 +1231,6 @@ async function handleAuthFormSubmit(event) {
       });
 
       const data = await response.json();
-      
-      // Nếu nhập sai mật khẩu, API sẽ trả về lỗi 401 và quăng thẳng xuống phần catch(e)
       if (!response.ok) throw new Error(data.detail || "Email hoặc mật khẩu không chính xác.");
 
       AppState.currentUser = { uid: data.user.id, displayName: data.user.name, email: data.user.email };
@@ -1241,12 +1238,10 @@ async function handleAuthFormSubmit(event) {
       updateNavAuthUI(AppState.currentUser);
       hideAuthModal();
       
-      // Hiển thị thông báo đăng nhập đúng
       const statusEl = document.querySelector('#auth-status');
       if (statusEl) { statusEl.textContent = 'Đăng nhập thành công!'; statusEl.style.color = '#4CAF50'; }
     }
   } catch (e) {
-    // Nếu sai mật khẩu, báo lỗi màu đỏ ngay lập tức
     const statusEl = document.querySelector('#auth-status');
     if (statusEl) {
       statusEl.textContent = e.message;
@@ -1453,3 +1448,54 @@ function initApp() {
 
 // Bootstrap once DOM content is parsed
 document.addEventListener('DOMContentLoaded', initApp);
+
+// Hàm xử lý khi bấm nút Continue with Google hoặc Facebook
+async function handleSocialLogin(provider) {
+  // Tạo thông tin giả lập chuyên nghiệp thay vì dán cứng mã sinh viên 11247140
+  const mockData = {
+    provider: provider,
+    email: provider === 'google' ? 'users@gmail.com' : 'users.facebook@gmail.com',
+    name: provider === 'google' ? 'users (Via Google)' : 'users (Via Facebook)'
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/social-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mockData)
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) throw new Error(data.detail || "Lỗi đăng nhập mạng xã hội.");
+
+    // Cập nhật giao diện
+    AppState.currentUser = { 
+      uid: data.user.id, 
+      displayName: data.user.name, 
+      email: data.user.email 
+    };
+    AppState.isLoggedIn = true;
+    updateNavAuthUI(AppState.currentUser);
+    hideAuthModal();
+    
+    const statusEl = document.querySelector('#auth-status');
+    if (statusEl) { 
+        statusEl.textContent = data.message; 
+        statusEl.style.color = '#4CAF50'; 
+    }
+    
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+  const googleBtn = document.querySelector('#btn-oauth-google');
+  if (googleBtn) {
+    googleBtn.addEventListener('click', () => handleSocialLogin('google'));
+}
+
+  const facebookBtn = document.querySelector('#btn-oauth-facebook');
+  if (facebookBtn) {
+    facebookBtn.addEventListener('click', () => handleSocialLogin('facebook'));
+}
