@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+pydantic
+python-dotenv
+bcrypt
+google-genai

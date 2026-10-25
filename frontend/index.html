@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI StoryLingo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top bar: shown after login -->
+  <header class="topbar">
+    <div class="brand">✦ AI StoryLingo</div>
+    <nav id="nav" class="nav" hidden>
+      <button class="nav-btn" data-view="create">Create</button>
+      <button class="nav-btn" data-view="story">Story</button>
+      <button class="nav-btn" data-view="quiz">Quiz</button>
+      <button class="nav-btn" data-view="progress">Progress</button>
+      <span id="user-name" class="user-name"></span>
+      <button class="nav-btn ghost" data-action="logout">Log out</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 1. Log in / Register -->
+    <section id="view-auth" class="view narrow" hidden>
+      <div class="card">
+        <h1 class="title">Learn a language.<br><em>Live the story.</em></h1>
+        <p class="muted">Log in to create AI stories, save new words and track your progress.</p>
+
+        <div class="tabs">
+          <button type="button" class="tab active" id="tab-login" data-auth-mode="login">Log in</button>
+          <button type="button" class="tab" id="tab-register" data-auth-mode="register">Create account</button>
+        </div>
+
+        <form id="auth-form" novalidate>
+          <label id="auth-name-group" hidden>Name
+            <input id="auth-name" type="text" autocomplete="name" placeholder="Your name">
+          </label>
+          <label>Email
+            <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com">
+          </label>
+          <label>Password
+            <input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters">
+          </label>
+          <p id="auth-error" class="error" role="alert"></p>
+          <button class="btn primary" id="auth-submit" type="submit">Log in</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- 2. Create a story -->
+    <section id="view-create" class="view narrow" hidden>
+      <div class="card">
+        <h1 class="title">Create your story</h1>
+        <p class="muted">Choose your settings. The AI writes chapter 1 and picks the vocabulary for you.</p>
+
+        <form id="create-form" novalidate>
+          <div class="grid-2">
+            <label>Language
+              <select name="language">
+                <option value="English">English</option>
+                <option value="Japanese">Japanese</option>
+                <option value="Korean">Korean</option>
+              </select>
+            </label>
+            <label>Level
+              <select name="level">
+                <option value="A1">A1 – Beginner</option>
+                <option value="A2">A2 – Elementary</option>
+                <option value="B1" selected>B1 – Intermediate</option>
+                <option value="B2">B2 – Upper intermediate</option>
+              </select>
+            </label>
+            <label>Genre
+              <select name="genre">
+                <option value="Fantasy">Fantasy</option>
+                <option value="Mystery">Mystery</option>
+                <option value="Sci-Fi">Sci-Fi</option>
+                <option value="Adventure">Adventure</option>
+              </select>
+            </label>
+            <label>Topic
+              <input name="topic" type="text" placeholder="e.g. space, dragons" maxlength="60">
+            </label>
+            <label>Vocabulary words (1–10)
+              <input name="target_words" type="number" min="1" max="10" value="5">
+            </label>
+            <label>Chapters
+              <select name="total_chapters">
+                <option value="2">2</option>
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+              </select>
+            </label>
+          </div>
+          <p id="create-error" class="error" role="alert"></p>
+          <button class="btn primary big" id="create-btn" type="submit">✨ Generate story</button>
+          <p id="create-status" class="muted center"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- 3. Story reader / 4. Quiz / 5. Progress: filled by app.js -->
+    <section id="view-story" class="view" hidden></section>
+    <section id="view-quiz" class="view narrow" hidden></section>
+    <section id="view-progress" class="view" hidden></section>
+  </main>
+
+  <!-- Vocabulary popup -->
+  <div id="word-popup" class="overlay" hidden>
+    <div class="popup card" role="dialog" aria-modal="true" aria-labelledby="popup-title">
+      <button class="icon-btn" data-action="close-popup" aria-label="Close">✕</button>
+      <div id="popup-body"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
