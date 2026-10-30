@@ -15,7 +15,15 @@ if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, echo=False, connect_args=connect_args, poolclass=NullPool)
+engine = create_engine(
+    DATABASE_URL, 
+    echo=False, 
+    connect_args=connect_args,
+    pool_pre_ping=True,      
+    pool_recycle=300,        
+    pool_size=10,
+    max_overflow=20
+)
 
 def create_db_and_tables() -> None:
     SQLModel.metadata.create_all(engine)
