@@ -2,10 +2,13 @@ import os
 from dotenv import load_dotenv
 from sqlmodel import Session, SQLModel, create_engine
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ENV_PATH = os.path.join(os.path.dirname(BASE_DIR), ".env")
+load_dotenv(ENV_PATH)
 
 DATABASE_URL = os.getenv("DATABASE_URL") or "sqlite:///./storylingo.db"
+
+print(f"🔥 Đang sử dụng kết nối Database: {DATABASE_URL}")
 
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
