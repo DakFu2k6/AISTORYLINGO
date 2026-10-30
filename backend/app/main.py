@@ -26,7 +26,6 @@ app.include_router(vocabulary.router)
 app.include_router(quiz.router)
 app.include_router(dashboard.router)
 
-
 @app.get("/", tags=["Health"])
 def root():
     return {"message": "AI StoryLingo API is running. See /docs for all endpoints."}
