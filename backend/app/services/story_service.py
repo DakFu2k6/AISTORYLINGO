@@ -30,7 +30,6 @@ class StoryService:
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
-                max_output_tokens=800,  
                 temperature=0.4        
             ),
         )
