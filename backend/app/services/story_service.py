@@ -76,7 +76,9 @@ class StoryService:
                 
                 prompt += "\n\nCRITICAL INSTRUCTION: Keep the story continuation very concise, MAXIMUM 150 words. Extract exactly 2 or 3 vocabulary words maximum from this new chapter. Do not write long paragraphs."
 
+                print(">>> 1. ĐANG GỌI GEMINI NGHĨ TRUYỆN...")
                 data = NextChapter(**self._ask_json(prompt))
+                print(">>> 2. AI ĐÃ TRẢ KẾT QUẢ VỀ!")
                 data.choices = [] if is_last else [c for c in data.choices if c.strip()][:3]
                 if not data.content.strip() or (not is_last and len(data.choices) < 2):
                     raise ValueError("AI answer is incomplete")
