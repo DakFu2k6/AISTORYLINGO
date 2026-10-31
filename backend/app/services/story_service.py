@@ -22,7 +22,7 @@ class StoryService:
     def __init__(self) -> None:
         api_key = os.getenv("GEMINI_API_KEY", "").strip()
         self.client = genai.Client(api_key=api_key) if api_key else None
-        self.model = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
+        self.model = "gemini-flash-lite-latest"
 
     def _ask_json(self, prompt: str) -> dict:
         response = self.client.models.generate_content(
@@ -43,7 +43,9 @@ class StoryService:
                 prompt = build_first_chapter_prompt(
                     language, level, genre, topic, target_words, total_chapters
                 )
+                print(">>> 1. ĐANG GỌI AI NGHĨ CHƯƠNG 1...")
                 data = FirstChapter(**self._ask_json(prompt))
+                print(">>> 2. AI ĐÃ TRẢ KẾT QUẢ VỀ CHO CHƯƠNG 1!")
                 data.vocabulary = data.vocabulary[:target_words]
                 data.choices = [c for c in data.choices if c.strip()][:3]
                 if not data.content.strip() or not data.vocabulary or len(data.choices) < 2:
