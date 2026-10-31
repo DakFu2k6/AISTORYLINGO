@@ -28,11 +28,14 @@ class StoryService:
         response = self.client.models.generate_content(
             model=self.model,
             contents=prompt,
-            config=types.GenerateContentConfig(response_mime_type="application/json"),
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                max_output_tokens=800,  
+                temperature=0.4        
+            ),
         )
         return _parse_json(response.text)
 
-    # Chapter 1 
     def first_chapter(
         self, language: str, level: str, genre: str, topic: str, target_words: int, total_chapters: int
     ) -> Tuple[FirstChapter, str]:
@@ -47,11 +50,10 @@ class StoryService:
                 if not data.content.strip() or not data.vocabulary or len(data.choices) < 2:
                     raise ValueError("AI answer is incomplete")
                 return data, "gemini"
-            except Exception as e:  # network, quota, bad JSON, wrong model name...
+            except Exception as e:  
                 print(f"[Gemini] chapter 1 failed ({e}). Using the demo story instead.")
         return demo_first_chapter(target_words), "demo"
 
-    # Next chapters 
     def next_chapter(
         self,
         title: str,
@@ -72,6 +74,9 @@ class StoryService:
                     title, language, level, genre, topic, previous_chapters,
                     choice, chapter_number, total_chapters, vocabulary_words,
                 )
+                
+                prompt += "\n\nCRITICAL INSTRUCTION: Keep the story continuation very concise, MAXIMUM 150 words. Extract exactly 2 or 3 vocabulary words maximum from this new chapter. Do not write long paragraphs."
+
                 data = NextChapter(**self._ask_json(prompt))
                 data.choices = [] if is_last else [c for c in data.choices if c.strip()][:3]
                 if not data.content.strip() or (not is_last and len(data.choices) < 2):
