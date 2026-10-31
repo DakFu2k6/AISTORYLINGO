@@ -22,7 +22,7 @@ class StoryService:
     def __init__(self) -> None:
         api_key = os.getenv("GEMINI_API_KEY", "").strip()
         self.client = genai.Client(api_key=api_key) if api_key else None
-        self.model = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+        self.model = os.getenv("GEMINI_MODEL", "gemini-flash-lite-latest")
 
     def _ask_json(self, prompt: str) -> dict:
         response = self.client.models.generate_content(
