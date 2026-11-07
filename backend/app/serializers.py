@@ -1,6 +1,7 @@
 import json
 
-from sqlmodel import Session, func, select
+from typing import Sequence
+from sqlmodel import Session, col, func, select
 from app.models import Chapter, Story, Vocabulary
 
 def story_to_dict(s: Story) -> dict:
@@ -37,9 +38,17 @@ def vocab_to_dict(v: Vocabulary) -> dict:
         "example": v.example or "",
     }
 
+def story_summaries(db: Session, stories: Sequence[Story]) -> list[dict]:
+    ids = [s.id for s in stories]
+    counts: dict[int, int] = {}
+    if ids:
+        rows = db.exec(
+            select(Chapter.story_id, func.count())
+            .where(col(Chapter.story_id).in_(ids))
+            .group_by(Chapter.story_id)
+        ).all()
+        counts = {story_id: n for story_id, n in rows}
+    return [{**story_to_dict(s), "chapters_done": counts.get(s.id, 0)} for s in stories]
+
 def story_summary(db: Session, s: Story) -> dict:
-    data = story_to_dict(s)
-    data["chapters_done"] = db.exec(
-        select(func.count()).select_from(Chapter).where(Chapter.story_id == s.id)
-    ).one()
-    return data
+    return story_summaries(db, [s])[0]

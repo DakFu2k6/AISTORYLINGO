@@ -1,21 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
+  <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI StoryLingo</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
   <!-- Top bar: shown after login -->
   <header class="topbar">
     <div class="brand">✦ AI StoryLingo</div>
+    <button id="menu-toggle" class="menu-toggle" aria-label="Open navigation" aria-controls="nav" aria-expanded="false"
+      hidden>☰</button>
     <nav id="nav" class="nav" hidden>
       <button class="nav-btn" data-view="create">Create</button>
       <button class="nav-btn" data-view="story">Story</button>
       <button class="nav-btn" data-view="quiz">Quiz</button>
       <button class="nav-btn" data-view="progress">Progress</button>
+      <button id="admin-nav" class="nav-btn" data-view="admin" hidden>Admin</button>
       <span id="user-name" class="user-name"></span>
       <button class="nav-btn ghost" data-action="logout">Log out</button>
     </nav>
@@ -25,6 +31,7 @@
     <!-- 1. Log in / Register -->
     <section id="view-auth" class="view narrow" hidden>
       <div class="card">
+        <p class="eyebrow">YOUR NEXT CHAPTER STARTS HERE</p>
         <h1 class="title">Learn a language.<br><em>Live the story.</em></h1>
         <p class="muted">Log in to create AI stories, save new words and track your progress.</p>
 
@@ -41,11 +48,21 @@
             <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com">
           </label>
           <label>Password
-            <input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters">
+            <input id="auth-password" type="password" autocomplete="current-password"
+              placeholder="8+ characters, a letter and a number">
           </label>
+          <label id="auth-confirm-group" hidden>Confirm password<input id="auth-confirm" type="password"
+              autocomplete="new-password" placeholder="Repeat your password"></label>
+          <label id="terms-group" class="check-label"><input id="accept-terms" type="checkbox"> I accept the <a
+              href="terms.html" target="_blank" rel="noopener">terms &amp; privacy notice</a> (required for new
+            accounts).</label>
           <p id="auth-error" class="error" role="alert"></p>
           <button class="btn primary" id="auth-submit" type="submit">Log in</button>
         </form>
+        <button class="text-btn" id="forgot-password" type="button">Forgot password?</button>
+        <div class="divider">or continue with Google</div>
+        <div id="google-button"></div>
+        <p id="google-status" class="muted small">Loading sign-in options…</p>
       </div>
     </section>
 
@@ -103,6 +120,22 @@
     </section>
 
     <!-- 3. Story reader / 4. Quiz / 5. Progress: filled by app.js -->
+    <section id="view-admin" class="view" hidden></section>
+    <section id="view-recovery" class="view narrow" hidden>
+      <div class="card">
+        <p class="eyebrow">ACCOUNT RECOVERY</p>
+        <h1 class="title" id="recovery-title">Forgot password?</h1>
+        <p class="muted" id="recovery-help">Enter your account email to receive a reset link.</p>
+        <form id="recovery-form"><label id="recovery-email-group">Email<input id="recovery-email" type="email" required
+              autocomplete="email"></label><label id="recovery-password-group" hidden>New password<input
+              id="recovery-password" type="password" autocomplete="new-password"
+              placeholder="8+ characters, a letter and a number"></label><label id="recovery-confirm-group"
+            hidden>Confirm password<input id="recovery-confirm" type="password" autocomplete="new-password"></label>
+          <p id="recovery-message" role="status"></p><button class="btn primary" id="recovery-submit">Send reset
+            link</button>
+        </form><button class="text-btn" data-goto="auth">Back to login</button>
+      </div>
+    </section>
     <section id="view-story" class="view" hidden></section>
     <section id="view-quiz" class="view narrow" hidden></section>
     <section id="view-progress" class="view" hidden></section>
@@ -118,7 +151,9 @@
 
   <div id="toast" class="toast" role="status"></div>
 
+  <footer>✦ StoryLingo · Small stories. Real progress. <a href="terms.html">Terms &amp; privacy</a></footer>
   <script src="api.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>

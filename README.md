@@ -1,136 +1,72 @@
-# ✦ AI StoryLingo
+# AI StoryLingo — Web MidTerm
 
-**Learn a language. Live the story.**
+Ứng dụng học ngoại ngữ qua truyện tương tác: tạo truyện, chọn diễn biến, lưu từ, luyện quiz và theo dõi tiến bộ. Frontend HTML/CSS/JavaScript; backend FastAPI + SQLModel; SQLite mặc định, hỗ trợ PostgreSQL; Gemini tùy chọn.
 
-AI StoryLingo is a small web app that teaches vocabulary through interactive stories.
-You choose a language, level, genre and topic, an AI writes the story, and you learn the new words while you read, make choices that change the plot, and finish with a quiz.
+**Đọc [hướng dẫn nâng cấp chi tiết](docs/UPGRADE_GUIDE_VI.md) trước khi ghép vào bài nhóm.** Toàn bộ file trong gói là code hoàn chỉnh, không phải đoạn code cần tự chèn.
 
-> Course project: Web Design & Programming · runs fully on `localhost`
+## Chạy trên Windows / PowerShell
 
-## What you can do
+Cần Python 3.10 trở lên. Giải nén, mở terminal tại thư mục `AiStoryLingo`.
 
-1. **Create an account / log in**
-2. **Generate a story** from language, level, genre, topic and number of words
-3. **Read** it: new words are highlighted. Click a word to see its pronunciation, meaning, Vietnamese meaning and an example, listen to it, and save it to your notebook
-4. **Choose** what happens next (A / B / C). The AI writes the next chapter from your choice
-5. **Take a quiz** on the words of the story. Your mastery of each word goes up or down
-6. **See your progress**: stories, saved words, mastery bars, quiz accuracy, and open old stories again
-
-## Tech stack
-
-| Part | Technology |
-|---|---|
-| Frontend | HTML, CSS, vanilla JavaScript (no build step) |
-| Backend | Python, FastAPI |
-| Database | SQLite (via SQLModel); can switch to PostgreSQL with one setting |
-| AI | Google Gemini API (optional, a demo story is built in) |
-| Speech | Browser Web Speech API |
-
-## Project structure
-
-```
-AI-StoryLingo/
-├── README.md
-├── .env.example            # copy to backend/.env
-├── .gitignore
-├── docs/
-│   └── ARCHITECTURE.md     # diagrams, database tables, API list
-├── backend/
-│   ├── requirements.txt
-│   ├── app/
-│   │   ├── main.py         # starts the API
-│   │   ├── database.py     # database connection
-│   │   ├── models.py       # database tables
-│   │   ├── serializers.py  # database row -> JSON
-│   │   ├── routes/         # auth, stories, vocabulary, quiz, dashboard
-│   │   └── services/       # story_service.py (Gemini) + demo_story.py
-│   ├── ai_engine/          # prompts.py + schemas.py (what we ask the AI)
-│   └── tests/              # automatic test of the whole flow
-└── frontend/
-    ├── index.html          # all screens
-    ├── style.css           # all styling
-    ├── api.js              # every call to the backend
-    └── app.js              # screens and buttons
-```
-
-## How to run (localhost)
-
-You need **Python 3.10+**. Open **two terminals** in the project folder.
-
-**Terminal 1: backend**
-
-```bash
+```powershell
+Copy-Item .env.example .env
 cd backend
 python -m venv .venv
-
-# Windows:
-.venv\Scripts\activate
-# Mac / Linux:
-source .venv/bin/activate
-
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-The API runs at http://localhost:8000 and its documentation at http://localhost:8000/docs.
-The database file `backend/storylingo.db` is created automatically.
+Terminal thứ hai, từ `AiStoryLingo`:
 
-**Terminal 2: frontend**
-
-```bash
+```powershell
 cd frontend
-python -m http.server 3000
+python -m http.server 5500
 ```
 
-Open **http://localhost:3000** in your browser.
+Mở **http://localhost:5500**. API: **http://localhost:8000/docs**. Không mở HTML bằng `file://`. Không cần kích hoạt venv nên tránh được lỗi PowerShell execution policy.
 
-### Using the real AI (optional)
+Mặc định không cần API key: ứng dụng dùng truyện demo và hiển thị nhãn Demo. Điền `GEMINI_API_KEY` vào `.env` ở thư mục gốc để dùng AI thật. `.env` ở gốc được đọc trước, `backend/.env` chỉ bổ sung biến chưa có; biến môi trường hệ điều hành ưu tiên cao nhất. Khởi động lại backend sau khi đổi cấu hình.
 
-Without a key the app still works: it shows a built-in demo story (marked with a **Demo story** badge).
-To use Gemini:
+## Tính năng mới
 
-1. Get a free key at https://aistudio.google.com/apikey
-2. Copy `.env.example` to `backend/.env` and write your key: `GEMINI_API_KEY=your_key`
-3. Restart the backend
+- Giao diện sáng, bố cục responsive; menu hamburger dưới 760px.
+- Đăng nhập email, kiểm tra email/password, mật khẩu bcrypt, giới hạn thử đăng nhập.
+- Phiên Bearer ngẫu nhiên có hạn 24 giờ, lưu hash ở database, thu hồi khi logout/reset.
+- Google Identity Services với kiểm tra chữ ký, audience, hạn token và nonce ở backend.
+- Quên mật khẩu qua SMTP, liên kết 15 phút dùng một lần, xác nhận mật khẩu mới.
+- Admin dashboard: thống kê và danh sách người dùng có phân trang; backend kiểm tra role.
+- Điều khoản và thông báo quyền riêng tư; đăng ký mới phải đồng ý.
+- Phân trang tại My words, My stories (6 mục/trang), Admin users (10 mục/trang).
 
-If Google changes model names, set `GEMINI_MODEL` in the same file. If the AI call fails during use, the app falls back to the demo text instead of crashing.
+## Cấp quyền admin
 
-### Run the automatic test
+Đăng ký tài khoản thường bằng giao diện, rồi mở terminal thứ ba tại `backend`:
 
-```bash
-cd backend
-pip install -r requirements-dev.txt
-python -m pytest -v
+```powershell
+.\.venv\Scripts\python.exe manage_admin.py your-email@example.com
 ```
 
-## Demo script (3 minutes)
+Đăng nhập lại để thấy mục Admin. Không có tài khoản admin/mật khẩu mặc định và không có API công khai tự cấp quyền.
 
-1. Create an account
-2. Choose English · B1 · Fantasy · topic "space" · 5 words → **Generate story**
-3. Click a highlighted word → listen → **Save word**
-4. Pick choice **A** → chapter 2 appears → pick again → chapter 3 and **The End**
-5. **Take the quiz** → answer 5 questions
-6. Open **Progress** → show stats, mastery bars, and **Read again**
+## Google và quên mật khẩu
 
-## Team
+Điền `GOOGLE_CLIENT_ID` để bật Google Sign-In. Đăng ký OAuth Web application, thêm JavaScript origin `http://localhost:5500`. Đây là luồng ID token JavaScript callback, không dùng client secret trong frontend. Xem hướng dẫn chi tiết trong `docs/UPGRADE_GUIDE_VI.md`.
 
-| Member | Main work |
-|---|---|
-| Member 1 (name) | Frontend: screens, popup, quiz and progress UI |
-| Member 2 (name) | Backend and database: API, models, tests |
-| Member 3 (name) | AI and docs: prompts, story service, README, diagrams |
+Điền `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` và `FRONTEND_URL=http://localhost:5500` để bật gửi email reset. Không có SMTP thì giao diện hiển thị lỗi cấu hình rõ ràng; không trả reset token cho trình duyệt.
 
-All members review each other's Pull Requests.
+## Kiểm thử
 
-## Git workflow
+Từ thư mục `backend`:
 
-- `main` always works. Nobody pushes to it directly.
-- One branch per task: `feature/story-reader`, `feature/quiz`, `fix/login-error`
-- Open a Pull Request, another member reviews and merges
-- Commit messages: `feat: add choice buttons`, `fix: handle empty topic`, `docs: update README`
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest -q
+```
 
-## Limitations (known, on purpose)
+Test dùng SQLite tạm và AI giả lập/demo, không sửa database thật, không gọi Google hoặc gửi email thật. Chi tiết phạm vi kiểm thử và giới hạn ở hướng dẫn nâng cấp.
 
-- Login is simplified for a class demo: passwords are hashed with bcrypt, but there are no tokens/sessions, so it is **not** production security
-- The demo story is fixed text and ignores the topic you type
-- Only English, Japanese and Korean are offered; the quiz asks for meanings (not fill-in-the-blank)
+## Dữ liệu cũ
+
+Sao lưu database trước khi cập nhật. Với SQLite, sao chép `backend/storylingo.db` từ bản cũ sang thư mục backend của bản mới khi server đã dừng. Server tự bổ sung các cột cần thiết; không cần xóa tài khoản cũ. Mật khẩu cũ vẫn đăng nhập được; quy tắc 8 ký tự áp dụng cho đăng ký/reset mới. Các phiên ở bản cũ không còn giá trị, cần đăng nhập lại.
+
+Gói bàn giao chỉ chứa source và `.env.example`, không chứa `.env` riêng, database cá nhân, `.git`, venv hoặc cache. Giữ lại cấu hình và dữ liệu gốc của nhóm riêng để ghép lại.

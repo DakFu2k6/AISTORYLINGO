@@ -1,5 +1,5 @@
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 class VocabularyItem(BaseModel):
     word: str
@@ -10,6 +10,8 @@ class VocabularyItem(BaseModel):
     example: str = ""
 
 class FirstChapter(BaseModel):
+    characters: List[str] = Field(default_factory=list)
+    setting: str = ""
     title: str
     content: str
     choices: List[str]
@@ -17,4 +19,4 @@ class FirstChapter(BaseModel):
 
 class NextChapter(BaseModel):
     content: str
-    choices: List[str] = []
+    choices: List[str] = Field(default_factory=list)
