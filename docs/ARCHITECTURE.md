@@ -1,72 +1,56 @@
-# Architecture — AI StoryLingo
+# Kiến trúc hệ thống
 
-## Request boundaries
+## Tổng thể
 
 ```mermaid
-flowchart TD
-    UI["HTML, CSS and JavaScript"] --> API["FastAPI routes"]
-    API --> SEC["Session and ownership checks"]
-    SEC --> DB[("SQLModel database")]
-    API --> AI["Gemini or demo service"]
+flowchart LR
+  U[Browser] --> F[Static frontend HTML CSS JS]
+  F -->|HTTP JSON + Bearer| A[FastAPI routes]
+  A --> S[Services: progress / AI / rate limit]
+  A --> D[(SQLite / PostgreSQL)]
+  S --> D
+  S -->|Optional| G[Gemini API]
+  A -->|Optional| O[Google ID token verification]
+  A -->|Optional| M[SMTP reset email]
 ```
 
-`frontend/api.js` attaches the Bearer session to requests. Routes use the shared `protect_learning` dependency, so supplying a user ID alone never authorizes access. `admin_user` additionally checks the role stored in the database. Account data in localStorage is only a cached display profile; startup verifies the session with `/auth/me`.
+## Cấu trúc trách nhiệm
 
-## Authentication
-
-| Endpoint | Purpose | Access |
+| Thành phần | Trách nhiệm | File |
 |---|---|---|
-| POST `/auth/register` | Validate name/email/password/terms and create a learner session | Public, throttled |
-| POST `/auth/login` | Verify bcrypt password and issue a session | Public, throttled |
-| GET `/auth/me` | Read the authenticated profile | Bearer |
-| POST `/auth/logout` | Revoke current session | Bearer |
-| GET `/auth/config` | Public Google Client ID and recovery availability | Public |
-| GET `/auth/google/nonce` | Issue a short-lived Google challenge | Public, throttled |
-| POST `/auth/google` | Verify Google identity and issue an application session | Verified Google token + nonce |
-| POST `/auth/forgot-password` | Send a 15-minute reset link through SMTP | Public, throttled |
-| POST `/auth/reset-password` | Consume the reset token and revoke old sessions | One-time reset token |
-| GET `/admin/overview` | Aggregate workspace counts | Admin Bearer |
-| GET `/admin/users` | Paginated account directory | Admin Bearer |
+| UI | Render màn hình, sự kiện, theme, navigation | `frontend/index.html`, `app.js`, CSS |
+| API client | Gửi HTTP, bearer token, xử lý lỗi và timeout | `frontend/api.js` |
+| App entry | Lifespan, CORS, router, health | `backend/app/main.py` |
+| Routes | Validation và nghiệp vụ HTTP | `backend/app/routes/*.py` |
+| Security | Xác minh token và quyền sở hữu | `backend/app/security.py` |
+| Database | Engine, session, tạo bảng, thêm cột tương thích | `backend/app/database.py` |
+| AI engine | Prompt và Pydantic response schema | `backend/ai_engine/*.py` |
+| AI service | Client Gemini, parse, validate, fallback demo | `backend/app/services/story_service.py` |
 
-Sessions are random opaque tokens. The database stores SHA-256 digests, purpose, expiry and user reference. Session plaintext is returned only at issuance and kept in the browser tab's sessionStorage. Passwords remain bcrypt hashes. Google accounts use the provider's `sub`; matching emails are not automatically linked.
-
-## Learning API
-
-| Endpoint | Responsibility |
-|---|---|
-| POST `/stories/generate` | Validate story settings, check quota, generate and save chapter/vocabulary |
-| POST `/stories/{id}/next-chapter` | Validate ownership and offered choice; generate the next chapter |
-| GET `/stories/history/{user_id}` | Paginated story summaries |
-| GET `/stories/{id}?user_id=...` | Owner-only reader data |
-| POST `/vocabulary/save` | Save a word from the learner's own story |
-| GET `/vocabulary/user/{user_id}` | Saved-word data for the authenticated learner |
-| GET `/quiz/story/{id}` | Owner-only quiz questions |
-| POST `/quiz/submit` | Check answer and update learning progress |
-| GET `/dashboard/{user_id}` | Aggregate statistics plus independent word/story pages |
-
-The existing user_id fields are retained for frontend compatibility, but are checked against the session. Story and vocabulary references are resolved and checked at the server.
-
-## Data relationships
+## Luồng tạo truyện
 
 ```mermaid
-erDiagram
-    users ||--o{ auth_tokens : authenticates
-    users ||--o{ stories : owns
-    users ||--o{ user_vocabulary : saves
-    users ||--o{ quiz_results : answers
-    users ||--o| user_stats : tracks
-    stories ||--o{ chapters : contains
-    stories ||--o{ vocabulary : teaches
-    vocabulary ||--o{ user_vocabulary : references
-    vocabulary ||--o{ quiz_results : tests
+sequenceDiagram
+  participant UI as Browser
+  participant API as POST /stories/generate
+  participant DB as Database
+  participant AI as StoryService
+  UI->>API: Bearer + story preferences + user_id
+  API->>API: Authenticate + ownership + rate limit
+  API->>AI: first_chapter(...)
+  AI->>AI: Gemini response validation / demo fallback
+  AI-->>API: Chapter + vocabulary + source
+  API->>DB: Persist Story, Chapter, Vocabulary
+  API-->>UI: Story, chapter, vocabulary, fallback_reason
 ```
 
-`users` adds a role and optional unique Google subject. `auth_tokens` stores sessions and reset tokens. `google_challenges` is a separate short-lived nonce table without a user foreign key because challenges are issued before login. Existing databases are upgraded by adding missing columns/indexes after table creation.
+## Ranh giới tin cậy
 
-## Pagination and statistics
+Frontend không được xem là nguồn phân quyền. Backend xác minh Bearer token và `user_id` ở dependency `protect_learning`; admin router sử dụng `admin_user`. Token phiên được lưu dưới dạng SHA-256 digest trong database. Cấu hình Gemini, Google và SMTP nằm ở server, không nhúng secret vào JavaScript.
 
-The dashboard takes `words_page`, `stories_page` and `page_size`; page numbers start at 1 and page size is limited to 50. Counts are queried separately from visible rows so changing pages does not change statistics. Recent quiz results used for level recommendations are limited to the latest 20 answers. The admin directory uses `page` and `page_size` with stable created-at/ID ordering.
+## Quyết định kỹ thuật
 
-## Operating scope
-
-Run one backend worker for the classroom deployment: the login/reset/story throttles use process memory. Google, SMTP and Gemini require the team's external configuration. PostgreSQL support is retained, but automated verification for this delivery uses SQLite. See `UPGRADE_GUIDE_VI.md` for setup, test cases and remaining scaling limitations.
+- Frontend static giúp triển khai demo đơn giản nhưng không có build pipeline hoặc type-check JS.
+- SQLModel giảm boilerplate nhưng `create_all` + `ALTER TABLE` không thay thế migration được quản lý phiên bản.
+- AI fallback tăng khả năng demo khi mất quota nhưng cần hiển thị rõ nguồn demo.
+- SQLite phù hợp local; PostgreSQL phù hợp hơn khi cần nhiều kết nối và vận hành lâu dài.
