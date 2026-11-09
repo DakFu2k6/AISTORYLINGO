@@ -18,7 +18,7 @@ from app.services.demo_story import demo_first_chapter, demo_next_chapter
 
 log = logging.getLogger("storylingo.ai")
 
-DEFAULT_MODEL = "gemini-flash-latest"
+DEFAULT_MODEL = "gemini-flash-lite-latest"
 NO_KEY_REASON = "No GEMINI_API_KEY was loaded. Put it in the project .env file and restart the server."
 
 @dataclass
@@ -167,7 +167,7 @@ class StoryService:
                 "response_mime_type": "application/json", 
                 "response_schema": schema, # Vẫn giữ schema để đảm bảo JSON chuẩn 100%
                 "temperature": 0.1,        # Logic đường thẳng, không tốn thời gian sáng tạo thừa
-                "max_output_tokens": 800   # 800 là đủ cho ví dụ (example) ngắn dưới 8 từ
+                "max_output_tokens": 1024   # 1024 là đủ cho ví dụ (example) ngắn dưới 8 từ
             }
             
             start_time = time.time()
