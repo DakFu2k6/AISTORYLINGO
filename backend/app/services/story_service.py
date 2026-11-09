@@ -101,9 +101,12 @@ class StoryService:
 
     def _make_client(self) -> tuple[Any, str]:
         timeout_ms = int(float(os.getenv("GEMINI_TIMEOUT_SECONDS", "45")) * 1000)
-        http = types.HttpOptions(timeout=timeout_ms)
+        api_version = os.getenv("GEMINI_API_VERSION", "v1beta").strip().lower()
+        if api_version not in {"v1", "v1beta"}:
+            raise ValueError(f"Unsupported Gemini API version: {api_version}")
+        http = types.HttpOptions(api_version=api_version,timeout=timeout_ms)
         choice = os.getenv("GEMINI_BACKEND", "auto").strip().lower()
-        use_vertex = choice == "vertex" or (choice == "auto" and self.api_key.startswith("AQ."))
+        use_vertex = (choice == "vertex" or (choice == "auto" and self.api_key.startswith("AQ.")))
         if use_vertex:
             return genai.Client(vertexai=True, api_key=self.api_key, http_options=http), "vertex"
         return genai.Client(api_key=self.api_key, http_options=http), "studio"
