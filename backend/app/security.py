@@ -58,6 +58,11 @@ async def protect_learning(request: Request, user: User = Depends(current_user),
             raise HTTPException(404, "Word not found.")
         story_id = word.story_id
     if story_id is not None:
-        story = db.get(Story, story_id)
+        # Ép kiểu int an toàn nếu story_id là chuỗi (từ path_params) để tương thích chuẩn cả SQLite lẫn PostgreSQL
+        try:
+            target_story_id = int(story_id)
+        except (ValueError, TypeError):
+            raise HTTPException(404, "Story not found.")
+        story = db.get(Story, target_story_id)
         if not story or story.user_id != user.id:
             raise HTTPException(404, "Story not found.")

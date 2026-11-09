@@ -94,7 +94,8 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
         raise HTTPException(400, "Please enter your name.")
     if db.exec(select(User).where(User.email == data.email)).first():
         raise HTTPException(400, "This email is already registered. Please log in.")
-    username = data.username.strip().lower() if getattr(data, "username", None) else None
+    # Chuyển username rỗng (hoặc chỉ toàn khoảng trắng) về None để tránh vi phạm ràng buộc UNIQUE trong DB
+    username = (data.username.strip().lower() or None) if getattr(data, "username", None) else None
     if username and db.exec(select(User).where(User.username == username)).first():
         raise HTTPException(400, "This username is already taken.")
     user = User(id=str(uuid.uuid4()), name=name, username=username, email=data.email, password_hash=hash_password(data.password))

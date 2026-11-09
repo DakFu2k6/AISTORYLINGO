@@ -2,7 +2,8 @@ import sys
 from dotenv import load_dotenv
 from app.database import BACKEND_DIR
 
-# Tải file .env từ thư mục backend
+# Tải file .env từ thư mục gốc hoặc thư mục backend (giúp script nhận diện ở mọi vị trí đặt file)
+load_dotenv(BACKEND_DIR.parent / ".env")
 load_dotenv(BACKEND_DIR / ".env")
 
 from app.services.story_service import StoryService  # noqa: E402
@@ -13,7 +14,7 @@ info = service.describe()
 print("=" * 50)
 print("🔍 KIỂM TRA CẤU HÌNH GEMINI HIỆN TẠI")
 print("=" * 50)
-print(f"  .env file found : {(BACKEND_DIR / '.env').exists()}")
+print(f"  .env file found : {(BACKEND_DIR.parent / '.env').exists() or (BACKEND_DIR / '.env').exists()}")
 print(f"  Key loaded      : {info['key_loaded']}")
 print(f"  Backend mode    : {info['backend']}   (studio = AI Studio, vertex = Vertex Express)")
 print(f"  Current model   : {info['model']}")

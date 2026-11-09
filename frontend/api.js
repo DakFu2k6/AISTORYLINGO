@@ -9,7 +9,8 @@ const API_BASE = (() => {
 })();
 
 const REQUEST_TIMEOUT_MS = 150000;
-;
+
+// Gửi HTTP request kèm Bearer token xác thực và cơ chế tự động hủy (timeout) sau 150s
 async function request(path, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
