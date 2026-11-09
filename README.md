@@ -108,7 +108,7 @@ Nhấn `Ctrl+C` tại từng terminal. Những lần sau chỉ cần chạy lạ
 | Không gửi được email reset | Kiểm tra SMTP host, port, TLS, tài khoản và log server |
 | `Address already in use` | Tắt tiến trình đang chiếm port hoặc đổi port đồng bộ frontend/backend/CORS |
 
-Đọc [OPERATIONS.md](docs/OPERATIONS.md) để xử lý chi tiết. Bản gốc có thêm [UPGRADE_GUIDE_VI.md](docs/UPGRADE_GUIDE_VI.md) để tham khảo lịch sử nâng cấp.
+Đọc [OPERATIONS.md](docs/OPERATIONS.md) để xử lý chi tiết.
 
 ## 9. Cấu trúc mã nguồn
 
