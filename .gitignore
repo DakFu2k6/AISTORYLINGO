@@ -7,3 +7,5 @@ __pycache__/
 node_modules/
 .vscode/
 .DS_Store
+report/
+report.zip

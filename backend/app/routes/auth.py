@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 import re
 import uuid
 import secrets
@@ -30,11 +31,22 @@ class EmailInput(BaseModel):
             raise ValueError("Enter a valid email address.")
         return value
 
-class LoginRequest(EmailInput):
+class LoginRequest(BaseModel):
+    email: str = Field(max_length=254)
     password: str = Field(max_length=256)
 
-class RegisterRequest(LoginRequest):
+    @field_validator("email")
+    @classmethod
+    def normalize(cls, value):
+        value = value.strip().lower()
+        if not value:
+            raise ValueError("Enter your email or username.")
+        return value
+
+class RegisterRequest(EmailInput):
+    password: str = Field(max_length=256)
     name: str = Field(min_length=1, max_length=80)
+    username: Optional[str] = Field(default=None, max_length=30)
     accepted_terms: bool = False
 
 class ResetRequest(BaseModel):
@@ -44,7 +56,7 @@ class ResetRequest(BaseModel):
 class GoogleRequest(BaseModel):
     credential: str = Field(max_length=8192)
     nonce: str = Field(max_length=256)
-    accepted_terms: bool = False
+    accepted_terms: bool = True
 
 _attempts = {}
 def throttle(key, maximum=10):
@@ -82,7 +94,10 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
         raise HTTPException(400, "Please enter your name.")
     if db.exec(select(User).where(User.email == data.email)).first():
         raise HTTPException(400, "This email is already registered. Please log in.")
-    user = User(id=str(uuid.uuid4()), name=name, email=data.email, password_hash=hash_password(data.password))
+    username = data.username.strip().lower() if getattr(data, "username", None) else None
+    if username and db.exec(select(User).where(User.username == username)).first():
+        raise HTTPException(400, "This username is already taken.")
+    user = User(id=str(uuid.uuid4()), name=name, username=username, email=data.email, password_hash=hash_password(data.password))
     db.add(user)
     try:
         db.commit()
@@ -95,7 +110,7 @@ def register(data: RegisterRequest, request: Request, db: Session = Depends(get_
 def login(data: LoginRequest, request: Request, db: Session = Depends(get_session)):
     throttle(("login-ip", request.client.host), 100)
     throttle(("login", request.client.host, data.email))
-    user = db.exec(select(User).where(User.email == data.email)).first()
+    user = db.exec(select(User).where((User.email == data.email) | (User.username == data.email))).first()
     # Always perform bcrypt work, including when the email does not exist.
     stored = user.password_hash if user and user.password_hash else _dummy
     try:
@@ -178,7 +193,7 @@ def forgot(data: EmailInput, request: Request, db: Session = Depends(get_session
     throttle(("reset-email", data.email), 3)
     if not os.getenv("SMTP_HOST"):
         raise HTTPException(503, "Password recovery email is not configured. Contact the project administrator.")
-    user = db.exec(select(User).where(User.email == data.email)).first()
+    user = db.exec(select(User).where((User.email == data.email) | (User.username == data.email))).first()
     if user:
         raw = issue(db, user.id, "reset", 15)
         link = os.getenv("FRONTEND_URL", "http://localhost:5500").rstrip("/") + "/?" + urlencode({"reset_token": raw})

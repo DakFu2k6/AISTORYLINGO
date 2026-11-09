@@ -39,7 +39,11 @@ else:
     )
 
 ADDED_COLUMNS = {
-    "users": {"role": "VARCHAR NOT NULL DEFAULT 'user'", "google_sub": "VARCHAR"},
+    "users": {
+        "role": "VARCHAR NOT NULL DEFAULT 'user'",
+        "google_sub": "VARCHAR",
+        "username": "VARCHAR",
+    },
     "user_vocabulary": {"last_reviewed": "TIMESTAMP"},
     "stories": {"context": "TEXT"},
 }
@@ -59,6 +63,7 @@ def ensure_columns(target: Engine | None = None) -> list[str]:
                     added.append(f"{table}.{name}")
         if inspector.has_table("users"):
             conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_google_subject ON users (google_sub)"))
+            conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_username ON users (username)"))
     return added
 
 def create_db_and_tables() -> None:

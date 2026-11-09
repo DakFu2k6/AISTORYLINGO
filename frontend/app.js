@@ -71,6 +71,7 @@ function setAuthMode(mode) {
   $("#auth-email").placeholder = mode === "register" ? "you@example.com" : "Email or username";
   $("#auth-email").autocomplete = mode === "register" ? "email" : "username";
   $("#auth-confirm-group").hidden = mode !== "register";
+  $("#terms-group").hidden = mode !== "register";
   $("#auth-submit").textContent = mode === "register" ? "Create account" : "Log in";
   $("#auth-password").autocomplete = mode === "register" ? "new-password" : "current-password";
   $("#auth-error").textContent = "";
@@ -715,14 +716,14 @@ async function setupGoogle() {
     google.accounts.id.initialize({
       client_id: cfg.google_client_id, nonce: challenge.nonce, callback: async response => {
         try {
-          const result = await post("/auth/google", { credential: response.credential, nonce: challenge.nonce, accepted_terms: $("#accept-terms").checked });
+          const result = await post("/auth/google", { credential: response.credential, nonce: challenge.nonce, accepted_terms: true });
           sessionStorage.setItem("storylingo_token", result.access_token); setUser(result.user); goTo("create"); toast("Welcome to StoryLingo!", "success");
         } catch (err) { $("#auth-error").textContent = err.message; }
         finally { $("#google-button").innerHTML = ""; setupGoogle(); }
       }
     });
     google.accounts.id.renderButton($("#google-button"), { theme: "outline", size: "large", width: Math.max(200, Math.min(280, $("#google-button").clientWidth || 280)) });
-    $("#google-status").textContent = "New users: accept the terms above before continuing with Google.";
+    $("#google-status").textContent = "";
     $("#google-retry").hidden = true;
   } catch (err) { $("#google-status").textContent = err.message; $("#google-retry").hidden = false; }
 }

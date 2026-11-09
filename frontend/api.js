@@ -52,7 +52,12 @@ async function request(path, options = {}) {
 
 const post = (path, body) => request(path, { method: "POST", body: JSON.stringify(body) });
 const api = {
-  register: (name, email, password) => post("/auth/register", { name, email, password, accepted_terms: document.querySelector("#accept-terms").checked }),
+  register: (name, ...rest) => {
+    const [username, email, password] = rest.length === 3 ? rest : [null, rest[0], rest[1]];
+    const body = { name, email, password, accepted_terms: Boolean(document.querySelector("#accept-terms")?.checked) };
+    if (username) body.username = username;
+    return post("/auth/register", body);
+  },
   login: (email, password) => post("/auth/login", { email, password }),
 
   // Stories 
