@@ -18,7 +18,7 @@ from app.services.demo_story import demo_first_chapter, demo_next_chapter
 
 log = logging.getLogger("storylingo.ai")
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-flash-lite-latest"
 NO_KEY_REASON = "No GEMINI_API_KEY was loaded. Put it in the project .env file and restart the server."
 
 @dataclass
@@ -80,13 +80,14 @@ def _validator_next(is_last: bool) -> Callable[[NextChapter], None]:
 
 class StoryService:
     def __init__(self, client: Any = None, model: Optional[str] = None) -> None:
-        self.model = (model or os.getenv("GEMINI_MODEL") or DEFAULT_MODEL).strip()
+        self.model = (model or DEFAULT_MODEL).strip()
         self.api_key = os.getenv("GEMINI_API_KEY", "").strip()
         self.backend = "none"          
         self.client: Any = None
         self.last_error: Optional[str] = None
         self.init_note: Optional[str] = None
         self._probe_cache: Optional[tuple[float, dict]] = None
+        
         if client is not None:
             self.client, self.backend = client, "custom"
         elif self.api_key:
@@ -100,10 +101,15 @@ class StoryService:
             self.init_note = NO_KEY_REASON
 
     def _make_client(self) -> tuple[Any, str]:
-        timeout_ms = int(float(os.getenv("GEMINI_TIMEOUT_SECONDS", "45")) * 1000)
-        http = types.HttpOptions(timeout=timeout_ms)
+        # 2. KỶ LUẬT THÉP: Chỉ cho Google tối đa 15 giây để phản hồi, nếu bị nghẽn mạng thì cắt luôn!
+        timeout_ms = 15000 
+        
+        api_version = os.getenv("GEMINI_API_VERSION", "v1beta").strip().lower()
+        if api_version not in {"v1", "v1beta"}:
+            raise ValueError(f"Unsupported Gemini API version: {api_version}")
+        http = types.HttpOptions(api_version=api_version, timeout=timeout_ms)
         choice = os.getenv("GEMINI_BACKEND", "auto").strip().lower()
-        use_vertex = choice == "vertex" or (choice == "auto" and self.api_key.startswith("AQ."))
+        use_vertex = (choice == "vertex" or (choice == "auto" and self.api_key.startswith("AQ.")))
         if use_vertex:
             return genai.Client(vertexai=True, api_key=self.api_key, http_options=http), "vertex"
         return genai.Client(api_key=self.api_key, http_options=http), "studio"
@@ -129,18 +135,17 @@ class StoryService:
         raw = self._redact(str(exc)).strip()
         low = raw.lower()
         if code in (401, 403) or "api key" in low or "api_key" in low or "permission_denied" in low:
-            return ("Gemini rejected the API key. Create a new key at aistudio.google.com/apikey. "
-                    "Keys starting with 'AQ.' need GEMINI_BACKEND=vertex, keys starting with 'AIza' need GEMINI_BACKEND=studio.")
+            return ("Gemini rejected the API key.")
         if code == 404 or "not_found" in low:
-            return f"Model '{self.model}' was not found. Check GEMINI_MODEL in backend/.env."
+            return f"Model '{self.model}' was not found. Check model settings in story_service.py."
         if code == 429 or "resource_exhausted" in low or "quota" in low:
-            return "Gemini quota or rate limit reached. Wait a minute, or use another key or model."
+            return "Gemini quota reached. Try again later."
         if code in (500, 502, 503, 504) or "unavailable" in low or "overloaded" in low:
-            return "Gemini is overloaded right now. Try again in a moment."
+            return "Gemini is overloaded."
         if "timed out" in low or "timeout" in low:
-            return "Gemini took too long to answer (timeout)."
+            return "Gemini timeout (quá 15s)."
         if isinstance(exc, (ValueError, json.JSONDecodeError)):
-            return f"The AI answer was not usable: {raw[:160]}"
+            return f"AI answer invalid: {raw[:160]}"
         return f"{type(exc).__name__}: {raw[:200]}"
 
     @staticmethod
@@ -152,29 +157,37 @@ class StoryService:
     def _remember(self, exc: Exception) -> str:
         reason = self._explain(exc)
         self.last_error = reason
-        log.warning("Gemini call failed, using the demo story. Reason: %s", reason)
+        log.warning("Gemini call failed, using demo story. Reason: %s", reason)
         return reason
 
     def _ask(self, prompt: str, schema: Type[BaseModel], validate: Callable[[Any], Any]) -> Any:
-        last_exc: Optional[Exception] = None
-        for use_schema in (True, False):
-            try:
-                config: dict = {"response_mime_type": "application/json", "temperature": 0.6}
-                if use_schema:
-                    config["response_schema"] = schema
-                response = self.client.models.generate_content(
-                    model=self.model, contents=prompt, config=types.GenerateContentConfig(**config)
-                )
-                parsed = schema(**_parse_json(response.text))
-                result = validate(parsed)
-                return parsed if result is None else result
-            except Exception as exc:
-                last_exc = exc
-                log.info("Gemini attempt (schema=%s) failed: %s", use_schema, self._explain(exc))
-                if self._is_fatal(exc):
-                    break
-        assert last_exc is not None
-        raise last_exc
+        # 3. MỘT PHÁT ĂN NGAY: Không retry rườm rà.
+        try:
+            config: dict = {
+                "response_mime_type": "application/json", 
+                "response_schema": schema, # Vẫn giữ schema để đảm bảo JSON chuẩn 100%
+                "temperature": 0.1,        # Logic đường thẳng, không tốn thời gian sáng tạo thừa
+                "max_output_tokens": 1024   # 1024 là đủ cho ví dụ (example) ngắn dưới 8 từ
+            }
+            
+            start_time = time.time()
+            log.info("-> [ULTRA-FAST] Goi %s. Toi da 15s...", self.model)
+            
+            response = self.client.models.generate_content(
+                model=self.model, contents=prompt, config=types.GenerateContentConfig(**config)
+            )
+            
+            elapsed = time.time() - start_time
+            log.info("<- [ULTRA-FAST] AI phan hoi thanh cong trong %.2f giay!", elapsed)
+
+            parsed = schema(**_parse_json(response.text))
+            result = validate(parsed)
+            return parsed if result is None else result
+
+        except Exception as exc:
+            elapsed = time.time() - start_time if 'start_time' in locals() else 0
+            log.info("x [ULTRA-FAST] That bai sau %.2f giay. Loi: %s", elapsed, self._explain(exc))
+            raise exc
 
     def first_chapter(
         self, language: str, level: str, genre: str, topic: str, target_words: int, total_chapters: int
@@ -228,7 +241,7 @@ class StoryService:
         else:
             try:
                 response = self.client.models.generate_content(
-                    model=self.model, contents="Reply with the single word: OK"
+                    model=self.model, contents="Reply with OK"
                 )
                 result = {"ok": True, "reply": (response.text or "").strip()[:40]}
             except Exception as exc:
