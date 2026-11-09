@@ -9,12 +9,12 @@ class User(SQLModel, table=True):
     __tablename__ = "users"
     id: str = Field(primary_key=True)
     name: str
+    username: Optional[str] = Field(default=None, unique=True, index=True)
     email: str = Field(unique=True, index=True)
     role: str = "user"
     google_sub: Optional[str] = Field(default=None, unique=True, index=True)
     password_hash: str
     created_at: datetime = Field(default_factory=utc_now)
-
 
 class UserStats(SQLModel, table=True):
     __tablename__ = "user_stats"

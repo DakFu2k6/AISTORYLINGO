@@ -66,6 +66,10 @@ function setAuthMode(mode) {
   $("#tab-login").classList.toggle("active", mode === "login");
   $("#tab-register").classList.toggle("active", mode === "register");
   $("#auth-name-group").hidden = mode !== "register";
+  $("#auth-username-group").hidden = mode !== "register";
+  $("#auth-identifier-label").textContent = mode === "register" ? "Email" : "Email or username";
+  $("#auth-email").placeholder = mode === "register" ? "you@example.com" : "Email or username";
+  $("#auth-email").autocomplete = mode === "register" ? "email" : "username";
   $("#auth-confirm-group").hidden = mode !== "register";
   $("#auth-submit").textContent = mode === "register" ? "Create account" : "Log in";
   $("#auth-password").autocomplete = mode === "register" ? "new-password" : "current-password";
@@ -75,13 +79,16 @@ function setAuthMode(mode) {
 async function onAuthSubmit(event) {
   event.preventDefault();
   const name = $("#auth-name").value.trim();
+  const username = $("#auth-username").value.trim().toLowerCase();
   const email = $("#auth-email").value.trim();
   const password = $("#auth-password").value;
   const errorEl = $("#auth-error");
   errorEl.textContent = "";
 
   if (authMode === "register" && !name) return (errorEl.textContent = "Please enter your name.");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return (errorEl.textContent = "Please enter a valid email.");
+  if (authMode === "register" && !/^[a-z0-9_]{3,30}$/.test(username)) return (errorEl.textContent = "Username must have 3–30 letters, numbers or underscores.");
+  if (authMode === "register" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return (errorEl.textContent = "Please enter a valid email.");
+  if (authMode === "login" && !email) return (errorEl.textContent = "Enter your email or username.");
   if (authMode === "register" && !$("#accept-terms").checked) return (errorEl.textContent = "Please accept the terms of use.");
   if (authMode === "register" && (password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password))) return (errorEl.textContent = "Use 8+ characters, including a letter and a number.");
   if (!password) return (errorEl.textContent = "Please enter your password.");
@@ -92,7 +99,7 @@ async function onAuthSubmit(event) {
   try {
     const data =
       authMode === "register"
-        ? await api.register(name, email, password)
+        ? await api.register(name, username, email, password)
         : await api.login(email, password);
     sessionStorage.setItem("storylingo_token", data.access_token);
     setUser(data.user);
@@ -699,7 +706,7 @@ async function recoverySubmit(event) {
 async function setupGoogle() {
   try {
     const cfg = await request("/auth/config");
-    if (!cfg.google_client_id) { $("#google-status").textContent = "Google sign-in will be available once configured by your team."; return; }
+    if (!cfg.google_client_id) { $("#google-status").textContent = "Google sign-in is not configured. Add GOOGLE_CLIENT_ID to .env and restart the backend."; $("#google-retry").hidden = false; return; }
     if (!window.google?.accounts) await new Promise((resolve, reject) => {
       const script = document.createElement("script"); script.src = "https://accounts.google.com/gsi/client";
       script.onload = resolve; script.onerror = () => reject(new Error("Cannot load Google sign-in. Check your connection.")); document.head.append(script);
@@ -715,11 +722,13 @@ async function setupGoogle() {
       }
     });
     google.accounts.id.renderButton($("#google-button"), { theme: "outline", size: "large", width: Math.max(200, Math.min(280, $("#google-button").clientWidth || 280)) });
-    $("#google-status").textContent = "New here? Accept the terms above to create an account.";
-  } catch (err) { $("#google-status").textContent = err.message; }
+    $("#google-status").textContent = "New users: accept the terms above before continuing with Google.";
+    $("#google-retry").hidden = true;
+  } catch (err) { $("#google-status").textContent = err.message; $("#google-retry").hidden = false; }
 }
 function initAccountFeatures() {
   setupGoogle();
+  $("#google-retry").addEventListener("click", () => { $("#google-retry").hidden = true; setupGoogle(); });
   $("#menu-toggle").addEventListener("click", () => {
     const open = $("#nav").classList.toggle("open"); $("#menu-toggle").setAttribute("aria-expanded", String(open));
   });

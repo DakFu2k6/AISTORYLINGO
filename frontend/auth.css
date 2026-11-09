@@ -1,0 +1,21 @@
+.google-button {
+    display: flex;
+    justify-content: center;
+    min-height: 44px;
+    width: 100%;
+    margin: 12px auto 0;
+}
+
+#google-status {
+    text-align: center;
+    margin-top: 10px;
+}
+
+#google-retry {
+    display: block;
+    margin: 8px auto;
+}
+
+#google-retry[hidden] {
+    display: none;
+}

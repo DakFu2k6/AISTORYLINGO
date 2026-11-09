@@ -29,6 +29,7 @@
     })();
   </script>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="auth.css">
 </head>
 
 <body>
@@ -65,11 +66,15 @@
         </div>
 
         <form id="auth-form" novalidate>
-          <label id="auth-name-group" hidden>Name
+          <label id="auth-name-group" hidden>Display name
             <input id="auth-name" type="text" autocomplete="name" placeholder="Your name">
           </label>
-          <label>Email
-            <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com">
+          <label id="auth-username-group" hidden>Username
+            <input id="auth-username" type="text" autocomplete="username" placeholder="e.g. storylearner" minlength="3"
+              maxlength="30">
+          </label>
+          <label><span id="auth-identifier-label">Email or username</span>
+            <input id="auth-email" type="text" autocomplete="username" placeholder="Email or username">
           </label>
           <label>Password
             <input id="auth-password" type="password" autocomplete="current-password"
@@ -85,7 +90,8 @@
         </form>
         <button class="text-btn" id="forgot-password" type="button">Forgot password?</button>
         <div class="divider">or continue with Google</div>
-        <div id="google-button"></div>
+        <div id="google-button" class="google-button" aria-label="Google sign-in"></div>
+        <button id="google-retry" class="text-btn" type="button" hidden>Retry Google sign-in</button>
         <p id="google-status" class="muted small">Loading sign-in options…</p>
       </div>
     </section>
