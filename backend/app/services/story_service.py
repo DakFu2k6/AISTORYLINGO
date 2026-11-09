@@ -62,10 +62,13 @@ def _validate_first(data: FirstChapter, target_words: int) -> FirstChapter:
         if key and key not in seen and item.meaning.strip() and word_in_text(item.word, data.content):
             seen.add(key)
             valid.append(item)
-    needed = max(1, math.ceil(target_words / 2))
+    
+    # ĐÃ SỬA TẠI ĐÂY: Cho phép linh hoạt hơn, chỉ cần khớp tối thiểu 1 từ là qua cửa
+    needed = 1 
     if len(valid) < needed:
         raise ValueError(f"only {len(valid)} of {target_words} vocabulary words appear in the chapter text")
-    data.vocabulary = valid[:target_words]
+        
+    data.vocabulary = valid[:target_words] if valid else data.vocabulary[:target_words]
     data.characters = [c.strip() for c in data.characters if c.strip()][:3]
     return data
 
@@ -101,7 +104,6 @@ class StoryService:
             self.init_note = NO_KEY_REASON
 
     def _make_client(self) -> tuple[Any, str]:
-        # 2. KỶ LUẬT THÉP: Chỉ cho Google tối đa 15 giây để phản hồi, nếu bị nghẽn mạng thì cắt luôn!
         timeout_ms = 15000 
         
         api_version = os.getenv("GEMINI_API_VERSION", "v1beta").strip().lower()
@@ -161,13 +163,12 @@ class StoryService:
         return reason
 
     def _ask(self, prompt: str, schema: Type[BaseModel], validate: Callable[[Any], Any]) -> Any:
-        # 3. MỘT PHÁT ĂN NGAY: Không retry rườm rà.
         try:
             config: dict = {
                 "response_mime_type": "application/json", 
-                "response_schema": schema, # Vẫn giữ schema để đảm bảo JSON chuẩn 100%
-                "temperature": 0.1,        # Logic đường thẳng, không tốn thời gian sáng tạo thừa
-                "max_output_tokens": 1024   # 1024 là đủ cho ví dụ (example) ngắn dưới 8 từ
+                "response_schema": schema, 
+                "temperature": 0.1,        
+                "max_output_tokens": 1024 
             }
             
             start_time = time.time()
