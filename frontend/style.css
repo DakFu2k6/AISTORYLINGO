@@ -958,3 +958,180 @@ footer a {
     transition: none !important;
   }
 }
+
+:root {
+  color-scheme: light;
+  --page-bg:
+    radial-gradient(ellipse at 0 0, #eae8ff, transparent 55%),
+    radial-gradient(ellipse at 100% 60%, #e0f5f3, transparent 55%),
+    #f5f7fc;
+  --header-bg: #fffffff0;
+  --surface-soft: #f9faff;
+  --surface-hover: #f1efff;
+  --accent-soft: #eeecff;
+  --label-color: #4b5b73;
+  --track-color: #e8ecf6;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #101522;
+  --panel: #192132;
+  --line: #34425b;
+  --text: #edf2fc;
+  --muted: #afbdd3;
+  --accent: #beb1ff;
+  --teal: #82d6df;
+  --good: #76dba5;
+  --bad: #ff9aa8;
+  --page-bg:
+    radial-gradient(ellipse at 0 0, #242044, transparent 55%),
+    radial-gradient(ellipse at 100% 60%, #15343b, transparent 55%),
+    #101522;
+  --header-bg: #101522f0;
+  --surface-soft: #202a3e;
+  --surface-hover: #303653;
+  --accent-soft: #332e50;
+  --label-color: #c1cce0;
+  --track-color: #35415a;
+}
+
+body {
+  background: var(--page-bg);
+  background-attachment: fixed;
+}
+
+.topbar {
+  background: var(--header-bg);
+}
+
+label {
+  color: var(--label-color);
+}
+
+input,
+select,
+.choice-btn,
+.option-btn,
+.words-box,
+.feedback {
+  background: var(--surface-soft);
+}
+
+select option,
+.btn,
+.chip,
+.icon-btn,
+.menu-toggle,
+.theme-toggle,
+.table-wrap,
+.toast {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.tabs,
+th {
+  background: var(--surface-soft);
+}
+
+.tab.active {
+  background: var(--panel);
+  color: var(--accent);
+}
+
+.nav-btn.active,
+.vocab-word {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.nav-btn:hover,
+.choice-btn:hover,
+.vocab-word:hover,
+.btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.bar {
+  background: var(--track-color);
+}
+
+.badge,
+.reco,
+.reco.change,
+.the-end {
+  background: var(--surface-soft);
+}
+
+.badge.warn {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-color: var(--line);
+}
+
+/* Giữ chữ trắng trên nút hành động chính */
+.btn.primary,
+.btn.primary:hover:not(:disabled) {
+  color: #fff;
+  background: linear-gradient(135deg, #6659dd, #4e45bd);
+}
+
+:root[data-theme="dark"] .option-btn.correct {
+  color: #d9ffe8;
+  background: #173b2c;
+  border-color: var(--good);
+}
+
+:root[data-theme="dark"] .option-btn.wrong {
+  color: #ffe2e5;
+  background: #49242f;
+  border-color: var(--bad);
+}
+
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  background: var(--surface-hover);
+}
+
+.theme-toggle[aria-pressed="true"] {
+  border-color: var(--accent);
+}
+
+body,
+.topbar,
+.card,
+input,
+select,
+.btn,
+.theme-toggle {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  body,
+  .topbar,
+  .card,
+  input,
+  select,
+  .btn,
+  .theme-toggle {
+    transition: none;
+  }
+}

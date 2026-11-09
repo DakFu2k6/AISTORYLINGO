@@ -734,3 +734,62 @@ function initAccountFeatures() {
     else { if (button.dataset.pageKind === "words") wordsPage = page; else storiesPage = page; loadProgress(); }
   });
 }
+
+function initThemeToggle() {
+  const button = document.getElementById("theme-toggle");
+  const icon = document.getElementById("theme-icon");
+  if (!button || !icon) return;
+  const systemTheme = window.matchMedia(
+    "(prefers-color-scheme: dark)"
+  );
+  function getSavedTheme() {
+    try {
+      return localStorage.getItem("storylingo_theme");
+    } catch {
+      return null;
+    }
+  }
+  function applyTheme(theme) {
+    const isDark = theme === "dark";
+    document.documentElement.dataset.theme = theme;
+    const label = isDark
+      ? "Chuyển sang giao diện sáng"
+      : "Chuyển sang giao diện tối";
+    button.setAttribute("aria-label", label);
+    button.setAttribute("aria-pressed", String(isDark));
+    button.title = label;
+    icon.textContent = "💡";
+    icon.style.opacity = isDark ? "0.65" : "1";
+  }
+  const savedTheme = getSavedTheme();
+  applyTheme(
+    savedTheme === "light" || savedTheme === "dark"
+      ? savedTheme
+      : systemTheme.matches
+        ? "dark"
+        : "light"
+  );
+  button.addEventListener("click", () => {
+    const nextTheme =
+      document.documentElement.dataset.theme === "dark"
+        ? "light"
+        : "dark";
+    applyTheme(nextTheme);
+    try {
+      localStorage.setItem("storylingo_theme", nextTheme);
+    } catch {
+    }
+  });
+  systemTheme.addEventListener("change", (event) => {
+    const preference = getSavedTheme();
+
+    if (preference !== "light" && preference !== "dark") {
+      applyTheme(event.matches ? "dark" : "light");
+    }
+  });
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initThemeToggle);
+} else {
+  initThemeToggle();
+}

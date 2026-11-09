@@ -6,6 +6,28 @@
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AI StoryLingo</title>
+  <script>
+    (() => {
+      let savedTheme = null;
+
+      try {
+        savedTheme = localStorage.getItem("storylingo_theme");
+      } catch { }
+
+      const systemDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+
+      const theme =
+        savedTheme === "light" || savedTheme === "dark"
+          ? savedTheme
+          : systemDark
+            ? "dark"
+            : "light";
+
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -14,6 +36,8 @@
   <!-- Top bar: shown after login -->
   <header class="topbar">
     <div class="brand">✦ AI StoryLingo</div>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Change Theme" aria-pressed="false"
+      title="Change Theme"><span id="theme-icon" aria-hidden="true">💡</span></button>
     <button id="menu-toggle" class="menu-toggle" aria-label="Open navigation" aria-controls="nav" aria-expanded="false"
       hidden>☰</button>
     <nav id="nav" class="nav" hidden>
