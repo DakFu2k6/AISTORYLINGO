@@ -8,8 +8,8 @@ const API_BASE = (() => {
   }
 })();
 
-const REQUEST_TIMEOUT_MS = 90000;
-
+const REQUEST_TIMEOUT_MS = 150000;
+;
 async function request(path, options = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);

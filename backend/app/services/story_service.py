@@ -163,11 +163,11 @@ class StoryService:
     def _ask(self, prompt: str, schema: Type[BaseModel], validate: Callable[[Any], Any]) -> Any:
         last_exc: Optional[Exception] = None
         
-        # 4. Cơ chế Exponential Backoff: Chờ giãn cách thời gian để né nghẽn mạng chớp nhoáng
+        # Chỉ thử tối đa 2 lần. Lần 1 thất bại -> Đợi 1 giây -> Thử lần 2. 
+        # Nếu lần 2 vẫn thất bại -> Cắt luôn, trả về Demo ngay lập tức!
         attempts = [
-            (True, 0),     # Lần 1: Thử ngay lập tức với schema chuẩn
-            (False, 2.0),  # Lần 2: Đợi 2 giây rồi gọi lại, bỏ schema
-            (False, 4.0)   # Lần 3: Đợi 4 giây rồi gọi lại lần cuối
+            (True, 0),     # Lần 1: Schema chuẩn
+            (False, 1.0)   # Lần 2: Nới lỏng schema, chỉ chờ 1 giây
         ]
 
         for use_schema, delay in attempts:
