@@ -18,7 +18,6 @@ from app.services.demo_story import demo_first_chapter, demo_next_chapter
 
 log = logging.getLogger("storylingo.ai")
 
-# 1. Cố định luôn model nhanh nhất tại đây, bỏ qua cấu hình trong file .env
 DEFAULT_MODEL = "gemini-flash-latest"
 NO_KEY_REASON = "No GEMINI_API_KEY was loaded. Put it in the project .env file and restart the server."
 
@@ -102,7 +101,9 @@ class StoryService:
             self.init_note = NO_KEY_REASON
 
     def _make_client(self) -> tuple[Any, str]:
-        timeout_ms = int(float(os.getenv("GEMINI_TIMEOUT_SECONDS", "90")) * 1000)
+        # 2. KỶ LUẬT THÉP: Chỉ cho Google tối đa 15 giây để phản hồi, nếu bị nghẽn mạng thì cắt luôn!
+        timeout_ms = 15000 
+        
         api_version = os.getenv("GEMINI_API_VERSION", "v1beta").strip().lower()
         if api_version not in {"v1", "v1beta"}:
             raise ValueError(f"Unsupported Gemini API version: {api_version}")
@@ -134,18 +135,17 @@ class StoryService:
         raw = self._redact(str(exc)).strip()
         low = raw.lower()
         if code in (401, 403) or "api key" in low or "api_key" in low or "permission_denied" in low:
-            return ("Gemini rejected the API key. Create a new key at aistudio.google.com/apikey. "
-                    "Keys starting with 'AQ.' need GEMINI_BACKEND=vertex, keys starting with 'AIza' need GEMINI_BACKEND=studio.")
+            return ("Gemini rejected the API key.")
         if code == 404 or "not_found" in low:
             return f"Model '{self.model}' was not found. Check model settings in story_service.py."
         if code == 429 or "resource_exhausted" in low or "quota" in low:
-            return "Gemini quota or rate limit reached. Wait a minute, or use another key or model."
+            return "Gemini quota reached. Try again later."
         if code in (500, 502, 503, 504) or "unavailable" in low or "overloaded" in low:
-            return "Gemini is overloaded right now. Try again in a moment."
+            return "Gemini is overloaded."
         if "timed out" in low or "timeout" in low:
-            return "Gemini took too long to answer (timeout)."
+            return "Gemini timeout (quá 15s)."
         if isinstance(exc, (ValueError, json.JSONDecodeError)):
-            return f"The AI answer was not usable: {raw[:160]}"
+            return f"AI answer invalid: {raw[:160]}"
         return f"{type(exc).__name__}: {raw[:200]}"
 
     @staticmethod
@@ -157,58 +157,37 @@ class StoryService:
     def _remember(self, exc: Exception) -> str:
         reason = self._explain(exc)
         self.last_error = reason
-        log.warning("Gemini call failed, using the demo story. Reason: %s", reason)
+        log.warning("Gemini call failed, using demo story. Reason: %s", reason)
         return reason
 
     def _ask(self, prompt: str, schema: Type[BaseModel], validate: Callable[[Any], Any]) -> Any:
-        last_exc: Optional[Exception] = None
-        
-        # Chỉ thử tối đa 2 lần. Lần 1 thất bại -> Đợi 1 giây -> Thử lần 2. 
-        # Nếu lần 2 vẫn thất bại -> Cắt luôn, trả về Demo ngay lập tức!
-        attempts = [
-            (True, 0),     # Lần 1: Schema chuẩn
-            (False, 1.0)   # Lần 2: Nới lỏng schema, chỉ chờ 1 giây
-        ]
+        # 3. MỘT PHÁT ĂN NGAY: Không retry rườm rà.
+        try:
+            config: dict = {
+                "response_mime_type": "application/json", 
+                "response_schema": schema, # Vẫn giữ schema để đảm bảo JSON chuẩn 100%
+                "temperature": 0.1,        # Logic đường thẳng, không tốn thời gian sáng tạo thừa
+                "max_output_tokens": 800   # 800 là đủ cho ví dụ (example) ngắn dưới 8 từ
+            }
+            
+            start_time = time.time()
+            log.info("-> [ULTRA-FAST] Goi %s. Toi da 15s...", self.model)
+            
+            response = self.client.models.generate_content(
+                model=self.model, contents=prompt, config=types.GenerateContentConfig(**config)
+            )
+            
+            elapsed = time.time() - start_time
+            log.info("<- [ULTRA-FAST] AI phan hoi thanh cong trong %.2f giay!", elapsed)
 
-        for use_schema, delay in attempts:
-            if delay > 0:
-                log.info("-> [RETRY] Dang doi %.1f giay truoc khi thu lai ket noi Gemini...", delay)
-                time.sleep(delay)
+            parsed = schema(**_parse_json(response.text))
+            result = validate(parsed)
+            return parsed if result is None else result
 
-            try:
-                # 2 & 3. Hạ temperature xuống 0.2 và ép max_output_tokens 1024 để tăng tốc độ phản hồi cực hạn
-                config: dict = {
-                    "response_mime_type": "application/json", 
-                    "temperature": 0.2,
-                    "max_output_tokens": 1024
-                }
-                if use_schema:
-                    config["response_schema"] = schema
-                
-                start_time = time.time()
-                log.info("-> [DIAGNOSTIC] Dang gui yeu cau toi Gemini (model=%s, schema=%s)...", self.model, use_schema)
-                
-                response = self.client.models.generate_content(
-                    model=self.model, contents=prompt, config=types.GenerateContentConfig(**config)
-                )
-                
-                elapsed = time.time() - start_time
-                log.info("<- [DIAGNOSTIC] Gemini phan hoi thanh cong trong %.2f giay.", elapsed)
-
-                parsed = schema(**_parse_json(response.text))
-                result = validate(parsed)
-                return parsed if result is None else result
-
-            except Exception as exc:
-                last_exc = exc
-                elapsed = time.time() - start_time if 'start_time' in locals() else 0
-                log.info("x [DIAGNOSTIC] Lan goi (schema=%s) that bai sau %.2f giay. Loi: %s", use_schema, elapsed, self._explain(exc))
-                
-                if self._is_fatal(exc):
-                    break
-                    
-        assert last_exc is not None
-        raise last_exc
+        except Exception as exc:
+            elapsed = time.time() - start_time if 'start_time' in locals() else 0
+            log.info("x [ULTRA-FAST] That bai sau %.2f giay. Loi: %s", elapsed, self._explain(exc))
+            raise exc
 
     def first_chapter(
         self, language: str, level: str, genre: str, topic: str, target_words: int, total_chapters: int
@@ -262,7 +241,7 @@ class StoryService:
         else:
             try:
                 response = self.client.models.generate_content(
-                    model=self.model, contents="Reply with the single word: OK"
+                    model=self.model, contents="Reply with OK"
                 )
                 result = {"ok": True, "reply": (response.text or "").strip()[:40]}
             except Exception as exc:
